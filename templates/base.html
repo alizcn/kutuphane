@@ -5,24 +5,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Kutuphane{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <nav>
         <div class="nav-left">
-            <a href="{% url 'books:kitap_listesi' %}" class="brand">Kutuphane</a>
-            <a href="{% url 'books:kitap_listesi' %}">Kitaplar</a>
-            <a href="{% url 'books:dashboard' %}">Dashboard</a>
+            <a href="{% url 'books:kitap_listesi' %}" class="brand">
+                <span class="brand-icon">&#128218;</span>
+                Kutuphane
+            </a>
+            <a href="{% url 'books:kitap_listesi' %}">&#128214; Kitaplar</a>
+            <a href="{% url 'books:dashboard' %}">&#128202; Dashboard</a>
             {% if user.is_staff %}
-            <a href="/admin/">Yonetim</a>
+            <a href="/admin/">&#9881; Yonetim</a>
             {% endif %}
         </div>
         <div class="nav-right">
             {% if user.is_authenticated %}
-            <a href="{% url 'books:profil' %}">{{ user.get_full_name|default:user.username }}</a>
-            <a href="{% url 'books:cikis' %}">Cikis</a>
+            <a href="{% url 'books:profil' %}" class="nav-user">
+                <span class="user-avatar">{{ user.first_name|first|default:user.username|first }}</span>
+                {{ user.get_full_name|default:user.username }}
+            </a>
+            <a href="{% url 'books:cikis' %}" title="Cikis Yap">&#9109; Cikis</a>
             {% else %}
-            <a href="{% url 'books:giris' %}">Giris</a>
+            <a href="{% url 'books:giris' %}">&#128100; Giris</a>
             <a href="{% url 'books:kayit' %}" class="btn btn-accent btn-sm">Kayit Ol</a>
             {% endif %}
         </div>
@@ -43,7 +52,7 @@
     </div>
 
     <footer class="site-footer">
-        Kutuphane Yonetim Sistemi &copy; 2026
+        &#128218; Kutuphane Yonetim Sistemi &copy; 2026 &mdash; Django ile gelistirilmistir.
     </footer>
 </body>
 </html>

@@ -3,12 +3,15 @@
 {% block title %}Profilim - Kutuphane{% endblock %}
 
 {% block content %}
-<h1 class="page-title">Profilim</h1>
+<div class="page-header">
+    <h1 class="page-title">&#128100; Profilim</h1>
+    <p class="page-subtitle">Bilgilerinizi guncelleyin ve odunc islemlerinizi yonetin.</p>
+</div>
 
 <div class="profile-grid">
     <!-- Profil Formu -->
     <div class="detail-card">
-        <h2>Bilgilerim</h2>
+        <h2><span class="section-icon">&#128221;</span> Bilgilerim</h2>
 
         {% if form.non_field_errors %}
         <div class="form-errors">
@@ -33,36 +36,34 @@
                 {% endif %}
             </div>
             {% endfor %}
-            <button type="submit" class="btn btn-primary">Guncelle</button>
+            <button type="submit" class="btn btn-primary mt-1">&#10003; Guncelle</button>
         </form>
     </div>
 
     <!-- Aktif Odunc Islemleri -->
     <div class="detail-card">
-        <h2>Aktif Odunc Aldiklarin ({{ aktif_oduncler.count }})</h2>
+        <h2><span class="section-icon">&#128218;</span> Aktif Odunc Aldiklarin ({{ aktif_oduncler.count }})</h2>
         {% for odunc in aktif_oduncler %}
         <div class="odunc-item">
             <div class="odunc-info">
-                <a href="{% url 'books:kitap_detay' odunc.kitap.pk %}"><strong>{{ odunc.kitap.baslik }}</strong></a>
+                <a href="{% url 'books:kitap_detay' odunc.kitap.pk %}">{{ odunc.kitap.baslik }}</a>
                 <div class="meta">
-                    Odunc: {{ odunc.odunc_tarihi|date:"d.m.Y" }} |
+                    &#128197; Odunc: {{ odunc.odunc_tarihi|date:"d.m.Y" }} |
                     Son Iade: {{ odunc.son_iade_tarihi|date:"d.m.Y" }}
                 </div>
                 {% if odunc.gecikme_var %}
-                <span class="badge stock-out">{{ odunc.gecikme_gun }} gun gecikme!</span>
+                <span class="badge stock-out">&#9888; {{ odunc.gecikme_gun }} gun gecikme!</span>
                 {% else %}
-                <span class="badge stock-ok">{{ odunc.kalan_gun }} gun kaldi</span>
+                <span class="badge stock-ok">&#10003; {{ odunc.kalan_gun }} gun kaldi</span>
                 {% endif %}
             </div>
-            <form method="post" action="{% url 'books:iade_et' odunc.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-accent btn-sm">Iade Et</button>
-            </form>
+            <a href="{% url 'books:iade_et' odunc.pk %}" class="btn btn-accent btn-sm">&#8617; Iade Et</a>
         </div>
         {% empty %}
         <div class="empty-state">
             <span class="empty-state-icon">&#128218;</span>
-            Aktif odunc isleminiz yok.
+            <p>Aktif odunc isleminiz bulunmuyor.</p>
+            <a href="{% url 'books:kitap_listesi' %}" class="btn btn-secondary btn-sm mt-2">Kitaplari Kesfet</a>
         </div>
         {% endfor %}
     </div>
@@ -71,25 +72,27 @@
 <!-- Gecmis Islemler -->
 {% if gecmis_oduncler %}
 <div class="detail-card full-width mt-3">
-    <h2>Gecmis Islemler</h2>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Kitap</th>
-                <th>Odunc Tarihi</th>
-                <th>Iade Tarihi</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for odunc in gecmis_oduncler %}
-            <tr>
-                <td><a href="{% url 'books:kitap_detay' odunc.kitap.pk %}">{{ odunc.kitap.baslik }}</a></td>
-                <td>{{ odunc.odunc_tarihi|date:"d.m.Y" }}</td>
-                <td>{{ odunc.teslim_tarihi|date:"d.m.Y" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <h2><span class="section-icon">&#128338;</span> Gecmis Islemler</h2>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Kitap</th>
+                    <th>Odunc Tarihi</th>
+                    <th>Iade Tarihi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for odunc in gecmis_oduncler %}
+                <tr>
+                    <td><a href="{% url 'books:kitap_detay' odunc.kitap.pk %}">{{ odunc.kitap.baslik }}</a></td>
+                    <td>{{ odunc.odunc_tarihi|date:"d.m.Y" }}</td>
+                    <td>{{ odunc.teslim_tarihi|date:"d.m.Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

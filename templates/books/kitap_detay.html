@@ -5,30 +5,35 @@
 {% block content %}
 <a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara don</a>
 
-<div class="detail-card" style="max-width:700px;">
+<div class="detail-card" style="max-width:720px;">
     <h1>{{ kitap.baslik }}</h1>
+    <p class="text-muted mb-2">{{ kitap.yazar.ad }} tarafindan yazilmistir</p>
 
-    <div class="info-row">
-        <span class="label">Yazar</span>
-        <span><a href="{% url 'books:yazar_detay' kitap.yazar.pk %}">{{ kitap.yazar.ad }}</a></span>
-    </div>
-    <div class="info-row">
-        <span class="label">Kategori</span>
-        <span>{{ kitap.kategori.ad|default:"-" }}</span>
-    </div>
-    <div class="info-row">
-        <span class="label">Yayin Yili</span>
-        <span>{{ kitap.yayin_yili }}</span>
-    </div>
-    <div class="info-row">
-        <span class="label">Sayfa Sayisi</span>
-        <span>{{ kitap.sayfa_sayisi }}</span>
-    </div>
-    <div class="info-row">
-        <span class="label">Stok</span>
-        <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
-            {{ kitap.stok }} adet
-        </span>
+    <div class="info-grid">
+        <div class="info-row">
+            <span class="label">&#9998; Yazar</span>
+            <span class="value"><a href="{% url 'books:yazar_detay' kitap.yazar.pk %}">{{ kitap.yazar.ad }}</a></span>
+        </div>
+        <div class="info-row">
+            <span class="label">&#128193; Kategori</span>
+            <span class="value">{{ kitap.kategori.ad|default:"Belirtilmemis" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">&#128197; Yayin Yili</span>
+            <span class="value">{{ kitap.yayin_yili }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">&#128196; Sayfa</span>
+            <span class="value">{{ kitap.sayfa_sayisi }} sayfa</span>
+        </div>
+        <div class="info-row">
+            <span class="label">&#128230; Stok</span>
+            <span>
+                <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
+                    {% if kitap.stok > 0 %}{{ kitap.stok }} adet mevcut{% else %}Stokta yok{% endif %}
+                </span>
+            </span>
+        </div>
     </div>
 
     {% if kitap.aciklama %}
@@ -40,13 +45,14 @@
     <div class="detail-actions">
         {% if user.is_authenticated %}
             {% if kitap.odunc_alinabilir %}
-            <a href="{% url 'books:odunc_al' kitap.pk %}" class="btn btn-primary btn-lg">Odunc Al</a>
+            <a href="{% url 'books:odunc_al' kitap.pk %}" class="btn btn-primary btn-lg">&#128214; Odunc Al</a>
             {% else %}
-            <span class="btn btn-disabled btn-lg">Stokta Yok</span>
+            <span class="btn btn-disabled btn-lg">&#10007; Stokta Yok</span>
             {% endif %}
         {% else %}
-            <a href="{% url 'books:giris' %}?next={% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary btn-lg">Odunc almak icin giris yapin</a>
+            <a href="{% url 'books:giris' %}?next={% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary btn-lg">&#128100; Odunc almak icin giris yapin</a>
         {% endif %}
+        <a href="{% url 'books:yazar_detay' kitap.yazar.pk %}" class="btn btn-ghost">Yazarin diger kitaplari &rarr;</a>
     </div>
 </div>
 {% endblock %}
