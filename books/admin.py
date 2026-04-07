@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Yazar, Kategori, Kitap, UyeProfil, OduncAlma
+from .models import Yazar, Kategori, Kitap, UyeProfil, OduncAlma, KitapDegerlendirme
 
 
 @admin.register(Yazar)
@@ -33,3 +33,12 @@ class OduncAlmaAdmin(admin.ModelAdmin):
     list_filter = ('aktif',)
     search_fields = ('uye__username', 'kitap__baslik')
     raw_id_fields = ('uye', 'kitap')
+
+
+@admin.register(KitapDegerlendirme)
+class KitapDegerlendirmeAdmin(admin.ModelAdmin):
+    list_display = ('kullanici', 'kitap', 'puan', 'olusturma_tarihi')
+    list_filter = ('puan',)
+    search_fields = ('kullanici__username', 'kitap__baslik', 'yorum')
+    raw_id_fields = ('kullanici', 'kitap')
+    readonly_fields = ('olusturma_tarihi',)

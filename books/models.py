@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.db.models import Avg
 from datetime import timedelta
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Yazar(models.Model):
@@ -51,6 +53,16 @@ class Kitap(models.Model):
     @property
     def odunc_alinabilir(self):
         return self.stok > 0
+
+    @property
+    def ortalama_puan(self):
+        sonuc = self.degerlendirmeler.aggregate(Avg('puan'))
+        val = sonuc['puan__avg']
+        return round(val, 1) if val is not None else None
+
+    @property
+    def degerlendirme_sayisi(self):
+        return self.degerlendirmeler.count()
 
 
 class UyeProfil(models.Model):
@@ -114,3 +126,40 @@ class OduncAlma(models.Model):
             delta = self.son_iade_tarihi - timezone.now()
             return delta.days
         return 0
+
+
+class KitapDegerlendirme(models.Model):
+    PUAN_SECENEKLERI = [
+        (1, '1 Yildiz'),
+        (2, '2 Yildiz'),
+        (3, '3 Yildiz'),
+        (4, '4 Yildiz'),
+        (5, '5 Yildiz'),
+    ]
+
+    kullanici = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='degerlendirmeler'
+    )
+    kitap = models.ForeignKey(
+        Kitap, on_delete=models.CASCADE, related_name='degerlendirmeler'
+    )
+    puan = models.PositiveSmallIntegerField(
+        choices=PUAN_SECENEKLERI,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    yorum = models.TextField(blank=True)
+    olusturma_tarihi = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Kitap Değerlendirmesi'
+        verbose_name_plural = 'Kitap Değerlendirmeleri'
+        ordering = ['-olusturma_tarihi']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['kullanici', 'kitap'],
+                name='unique_kullanici_kitap_degerlendirme',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.kullanici.username} - {self.kitap.baslik} ({self.puan}/5)"

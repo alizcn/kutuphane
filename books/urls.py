@@ -21,4 +21,7 @@ urlpatterns = [
     # Odunc alma / iade
     path('kitap/<int:pk>/odunc-al/', views.odunc_al, name='odunc_al'),
     path('odunc/<int:pk>/iade/', views.iade_et, name='iade_et'),
+
+    # Degerlendirme
+    path('kitap/<int:pk>/degerlendirme/', views.degerlendirme_ekle, name='degerlendirme_ekle'),
 ]
