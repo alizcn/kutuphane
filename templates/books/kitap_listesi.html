@@ -3,18 +3,26 @@
 {% block title %}Kitaplar - Kutuphane{% endblock %}
 
 {% block content %}
-<h1 class="page-title">Kitaplar</h1>
+<div class="page-header">
+    <h1 class="page-title">&#128214; Kitaplar</h1>
+    <p class="page-subtitle">Kutuphane koleksiyonumuzu kesfet, odunc al ve oku.</p>
+</div>
 
-<form method="get" class="search-form">
-    {% if secili_kategori %}
-    <input type="hidden" name="kategori" value="{{ secili_kategori }}">
-    {% endif %}
-    <input type="text" name="q" value="{{ arama }}" placeholder="Kitap veya yazar ara..." class="search-input">
-    <button type="submit" class="btn btn-primary">Ara</button>
-    {% if arama %}
-    <a href="{% url 'books:kitap_listesi' %}{% if secili_kategori %}?kategori={{ secili_kategori }}{% endif %}" class="btn btn-secondary">Temizle</a>
-    {% endif %}
-</form>
+<div class="search-section">
+    <form method="get" class="search-form">
+        {% if secili_kategori %}
+        <input type="hidden" name="kategori" value="{{ secili_kategori }}">
+        {% endif %}
+        <div class="search-input-wrapper">
+            <span class="search-icon">&#128269;</span>
+            <input type="text" name="q" value="{{ arama }}" placeholder="Kitap adi, yazar veya konu ara..." class="search-input">
+        </div>
+        <button type="submit" class="btn btn-primary">Ara</button>
+        {% if arama %}
+        <a href="{% url 'books:kitap_listesi' %}{% if secili_kategori %}?kategori={{ secili_kategori }}{% endif %}" class="btn btn-secondary">Temizle</a>
+        {% endif %}
+    </form>
+</div>
 
 <div class="filter-bar">
     <a href="{% url 'books:kitap_listesi' %}{% if arama %}?q={{ arama }}{% endif %}" class="{% if not secili_kategori %}active{% endif %}">Tumu</a>
@@ -24,18 +32,23 @@
 </div>
 
 {% if kitaplar %}
+<p class="results-count"><strong>{{ kitaplar|length }}</strong> kitap listeleniyor{% if arama %} &mdash; "{{ arama }}" icin sonuclar{% endif %}</p>
+
 <div class="book-grid">
     {% for kitap in kitaplar %}
     <a href="{% url 'books:kitap_detay' kitap.pk %}" class="book-card">
-        <h3>{{ kitap.baslik }}</h3>
-        <div class="meta">{{ kitap.yazar.ad }} &middot; {{ kitap.yayin_yili }} &middot; {{ kitap.sayfa_sayisi }} sayfa</div>
+        <div class="book-card-header">
+            <h3>{{ kitap.baslik }}</h3>
+            <span class="book-year">{{ kitap.yayin_yili }}</span>
+        </div>
+        <div class="meta">&#9998; {{ kitap.yazar.ad }} &middot; {{ kitap.sayfa_sayisi }} sayfa</div>
         <div class="desc">{{ kitap.aciklama }}</div>
         <div class="card-footer">
             <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
-                Stok: {{ kitap.stok }}
+                {% if kitap.stok > 0 %}&#10003; Stok: {{ kitap.stok }}{% else %}&#10007; Stokta Yok{% endif %}
             </span>
             {% if kitap.kategori %}
-            <span class="badge">{{ kitap.kategori.ad }}</span>
+            <span class="badge badge-info">{{ kitap.kategori.ad }}</span>
             {% endif %}
         </div>
     </a>
@@ -45,9 +58,10 @@
 <div class="empty-state">
     <span class="empty-state-icon">&#128214;</span>
     {% if arama %}
-        "{{ arama }}" icin sonuc bulunamadi.
+    <p><strong>"{{ arama }}"</strong> icin sonuc bulunamadi.</p>
+    <p>Farkli anahtar kelimelerle tekrar deneyin.</p>
     {% else %}
-        Bu kategoride kitap bulunamadi.
+    <p>Bu kategoride henuz kitap bulunamadi.</p>
     {% endif %}
 </div>
 {% endif %}
