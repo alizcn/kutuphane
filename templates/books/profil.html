@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Profilim - Kutuphane{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Profilim</h1>
+
+<div class="profile-grid">
+    <!-- Profil Formu -->
+    <div class="detail-card">
+        <h2>Bilgilerim</h2>
+
+        {% if form.non_field_errors %}
+        <div class="form-errors">
+            {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="field-error">
+                    {% for error in field.errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Guncelle</button>
+        </form>
+    </div>
+
+    <!-- Aktif Odunc Islemleri -->
+    <div class="detail-card">
+        <h2>Aktif Odunc Aldiklarin ({{ aktif_oduncler.count }})</h2>
+        {% for odunc in aktif_oduncler %}
+        <div class="odunc-item">
+            <div class="odunc-info">
+                <a href="{% url 'books:kitap_detay' odunc.kitap.pk %}"><strong>{{ odunc.kitap.baslik }}</strong></a>
+                <div class="meta">
+                    Odunc: {{ odunc.odunc_tarihi|date:"d.m.Y" }} |
+                    Son Iade: {{ odunc.son_iade_tarihi|date:"d.m.Y" }}
+                </div>
+                {% if odunc.gecikme_var %}
+                <span class="badge stock-out">{{ odunc.gecikme_gun }} gun gecikme!</span>
+                {% else %}
+                <span class="badge stock-ok">{{ odunc.kalan_gun }} gun kaldi</span>
+                {% endif %}
+            </div>
+            <form method="post" action="{% url 'books:iade_et' odunc.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary btn-sm">Iade Et</button>
+            </form>
+        </div>
+        {% empty %}
+        <div class="empty-state">Aktif odunc isleminiz yok.</div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Gecmis Islemler -->
+{% if gecmis_oduncler %}
+<div class="detail-card full-width" style="margin-top: 1.5rem;">
+    <h2>Gecmis Islemler</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Kitap</th>
+                <th>Odunc Tarihi</th>
+                <th>Iade Tarihi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for odunc in gecmis_oduncler %}
+            <tr>
+                <td><a href="{% url 'books:kitap_detay' odunc.kitap.pk %}">{{ odunc.kitap.baslik }}</a></td>
+                <td>{{ odunc.odunc_tarihi|date:"d.m.Y" }}</td>
+                <td>{{ odunc.teslim_tarihi|date:"d.m.Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

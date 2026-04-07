@@ -1,36 +1,36 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from .models import UyeProfil
+from .models import UyeProfil, Kitap
 
 
 class KayitFormu(forms.ModelForm):
     username = forms.CharField(
-        label='Kullanıcı Adı',
+        label='Kullanici Adi',
         max_length=150,
-        widget=forms.TextInput(attrs={'placeholder': 'Kullanıcı adınız'}),
+        widget=forms.TextInput(attrs={'placeholder': 'Kullanici adiniz'}),
     )
     first_name = forms.CharField(
         label='Ad',
         max_length=150,
-        widget=forms.TextInput(attrs={'placeholder': 'Adınız'}),
+        widget=forms.TextInput(attrs={'placeholder': 'Adiniz'}),
     )
     last_name = forms.CharField(
         label='Soyad',
         max_length=150,
-        widget=forms.TextInput(attrs={'placeholder': 'Soyadınız'}),
+        widget=forms.TextInput(attrs={'placeholder': 'Soyadiniz'}),
     )
     email = forms.EmailField(
         label='E-posta',
         widget=forms.EmailInput(attrs={'placeholder': 'E-posta adresiniz'}),
     )
     password = forms.CharField(
-        label='Şifre',
-        widget=forms.PasswordInput(attrs={'placeholder': 'Şifreniz'}),
+        label='Sifre',
+        widget=forms.PasswordInput(attrs={'placeholder': 'Sifreniz'}),
     )
     password_confirm = forms.CharField(
-        label='Şifre Tekrar',
-        widget=forms.PasswordInput(attrs={'placeholder': 'Şifrenizi tekrar girin'}),
+        label='Sifre Tekrar',
+        widget=forms.PasswordInput(attrs={'placeholder': 'Sifrenizi tekrar girin'}),
     )
     telefon = forms.CharField(
         label='Telefon',
@@ -51,13 +51,13 @@ class KayitFormu(forms.ModelForm):
     def clean_username(self):
         username = self.cleaned_data.get('username')
         if User.objects.filter(username=username).exists():
-            raise forms.ValidationError('Bu kullanıcı adı zaten kullanılıyor.')
+            raise forms.ValidationError('Bu kullanici adi zaten kullaniliyor.')
         return username
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError('Bu e-posta adresi zaten kullanılıyor.')
+            raise forms.ValidationError('Bu e-posta adresi zaten kullaniliyor.')
         return email
 
     def clean(self):
@@ -65,7 +65,7 @@ class KayitFormu(forms.ModelForm):
         password = cleaned_data.get('password')
         password_confirm = cleaned_data.get('password_confirm')
         if password and password_confirm and password != password_confirm:
-            raise forms.ValidationError('Şifreler eşleşmiyor.')
+            raise forms.ValidationError('Sifreler eslesmiyor.')
         return cleaned_data
 
     def save(self, commit=True):
@@ -83,12 +83,12 @@ class KayitFormu(forms.ModelForm):
 
 class GirisFormu(AuthenticationForm):
     username = forms.CharField(
-        label='Kullanıcı Adı',
-        widget=forms.TextInput(attrs={'placeholder': 'Kullanıcı adınız'}),
+        label='Kullanici Adi',
+        widget=forms.TextInput(attrs={'placeholder': 'Kullanici adiniz'}),
     )
     password = forms.CharField(
-        label='Şifre',
-        widget=forms.PasswordInput(attrs={'placeholder': 'Şifreniz'}),
+        label='Sifre',
+        widget=forms.PasswordInput(attrs={'placeholder': 'Sifreniz'}),
     )
 
 
@@ -107,3 +107,44 @@ class ProfilFormu(forms.ModelForm):
         widgets = {
             'adres': forms.Textarea(attrs={'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            user = self.instance.kullanici
+            self.fields['first_name'].initial = user.first_name
+            self.fields['last_name'].initial = user.last_name
+            self.fields['email'].initial = user.email
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        user = self.instance.kullanici
+        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+            raise forms.ValidationError('Bu e-posta adresi baska bir kullanici tarafindan kullaniliyor.')
+        return email
+
+    def save(self, commit=True):
+        profil = super().save(commit=False)
+        user = profil.kullanici
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+            profil.save()
+        return profil
+
+
+class OduncAlmaFormu(forms.Form):
+    """Odunc alma islemini onaylamak icin kullanilan basit form."""
+    kitap_id = forms.IntegerField(widget=forms.HiddenInput())
+
+    def clean_kitap_id(self):
+        kitap_id = self.cleaned_data.get('kitap_id')
+        try:
+            kitap = Kitap.objects.get(pk=kitap_id)
+        except Kitap.DoesNotExist:
+            raise forms.ValidationError('Kitap bulunamadi.')
+        if kitap.stok <= 0:
+            raise forms.ValidationError('Bu kitap su anda stokta bulunmuyor.')
+        return kitap_id
