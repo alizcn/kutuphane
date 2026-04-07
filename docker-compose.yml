@@ -1,0 +1,15 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8050:8000"
+    volumes:
+      - .:/app
+      - db_data:/app/data
+    environment:
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_PASSWORD=admin123
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
+
+volumes:
+  db_data:

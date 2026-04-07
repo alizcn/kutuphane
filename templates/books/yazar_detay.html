@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}{{ yazar.ad }} - Kütüphane{% endblock %}
+
+{% block content %}
+<a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara dön</a>
+
+<div class="author-header">
+    <h1>{{ yazar.ad }}</h1>
+    {% if yazar.dogum_yili %}<div class="meta">Doğum: {{ yazar.dogum_yili }}</div>{% endif %}
+    {% if yazar.biyografi %}<div class="bio">{{ yazar.biyografi }}</div>{% endif %}
+</div>
+
+<h2 class="page-title" style="font-size:1.3rem;">Kitapları</h2>
+
+{% if kitaplar %}
+<div class="book-grid">
+    {% for kitap in kitaplar %}
+    <a href="{% url 'books:kitap_detay' kitap.pk %}" class="book-card">
+        <h3>{{ kitap.baslik }}</h3>
+        <div class="meta">{{ kitap.yayin_yili }} &middot; {{ kitap.sayfa_sayisi }} sayfa</div>
+        <div class="desc">{{ kitap.aciklama }}</div>
+        <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
+            Stok: {{ kitap.stok }}
+        </span>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">Bu yazara ait kitap bulunamadı.</div>
+{% endif %}
+{% endblock %}

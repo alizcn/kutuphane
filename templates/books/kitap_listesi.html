@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Kitaplar - Kütüphane{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Kitaplar</h1>
+
+<div class="filter-bar">
+    <a href="{% url 'books:kitap_listesi' %}" class="{% if not secili_kategori %}active{% endif %}">Tümü</a>
+    {% for kat in kategoriler %}
+    <a href="?kategori={{ kat.id }}" class="{% if secili_kategori == kat.id %}active{% endif %}">{{ kat.ad }}</a>
+    {% endfor %}
+</div>
+
+{% if kitaplar %}
+<div class="book-grid">
+    {% for kitap in kitaplar %}
+    <a href="{% url 'books:kitap_detay' kitap.pk %}" class="book-card">
+        <h3>{{ kitap.baslik }}</h3>
+        <div class="meta">{{ kitap.yazar.ad }} &middot; {{ kitap.yayin_yili }} &middot; {{ kitap.sayfa_sayisi }} sayfa</div>
+        <div class="desc">{{ kitap.aciklama }}</div>
+        <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
+            Stok: {{ kitap.stok }}
+        </span>
+        {% if kitap.kategori %}
+        <span class="badge">{{ kitap.kategori.ad }}</span>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">Bu kategoride kitap bulunamadı.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{{ kitap.baslik }} - Kütüphane{% endblock %}
+
+{% block content %}
+<a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara dön</a>
+
+<div class="detail-card">
+    <h1>{{ kitap.baslik }}</h1>
+
+    <div class="info-row">
+        <span class="label">Yazar</span>
+        <span><a href="{% url 'books:yazar_detay' kitap.yazar.pk %}">{{ kitap.yazar.ad }}</a></span>
+    </div>
+    <div class="info-row">
+        <span class="label">Kategori</span>
+        <span>{{ kitap.kategori.ad|default:"-" }}</span>
+    </div>
+    <div class="info-row">
+        <span class="label">Yayın Yılı</span>
+        <span>{{ kitap.yayin_yili }}</span>
+    </div>
+    <div class="info-row">
+        <span class="label">Sayfa Sayısı</span>
+        <span>{{ kitap.sayfa_sayisi }}</span>
+    </div>
+    <div class="info-row">
+        <span class="label">Stok</span>
+        <span>{{ kitap.stok }} adet</span>
+    </div>
+
+    {% if kitap.aciklama %}
+    <div class="description">
+        <p>{{ kitap.aciklama }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
