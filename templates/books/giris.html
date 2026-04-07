@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Giris Yap - Kutuphane{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <h1>Giris Yap</h1>
+
+    {% if form.non_field_errors %}
+    <div class="form-errors">
+        {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <div class="field-error">
+                {% for error in field.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary btn-full">Giris Yap</button>
+    </form>
+
+    <div class="auth-link">
+        Hesabiniz yok mu? <a href="{% url 'books:kayit' %}">Kayit Olun</a>
+    </div>
+</div>
+{% endblock %}

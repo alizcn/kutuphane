@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}{{ yazar.ad }} - Kütüphane{% endblock %}
+{% block title %}{{ yazar.ad }} - Kutuphane{% endblock %}
 
 {% block content %}
-<a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara dön</a>
+<a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara don</a>
 
 <div class="author-header">
     <h1>{{ yazar.ad }}</h1>
-    {% if yazar.dogum_yili %}<div class="meta">Doğum: {{ yazar.dogum_yili }}</div>{% endif %}
+    {% if yazar.dogum_yili %}<div class="meta">Dogum: {{ yazar.dogum_yili }}</div>{% endif %}
     {% if yazar.biyografi %}<div class="bio">{{ yazar.biyografi }}</div>{% endif %}
 </div>
 
-<h2 class="page-title" style="font-size:1.3rem;">Kitapları</h2>
+<h2 class="page-title" style="font-size:1.3rem;">Kitaplari ({{ kitaplar.count }})</h2>
 
 {% if kitaplar %}
 <div class="book-grid">
@@ -20,13 +20,18 @@
         <h3>{{ kitap.baslik }}</h3>
         <div class="meta">{{ kitap.yayin_yili }} &middot; {{ kitap.sayfa_sayisi }} sayfa</div>
         <div class="desc">{{ kitap.aciklama }}</div>
-        <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
-            Stok: {{ kitap.stok }}
-        </span>
+        <div class="card-footer">
+            <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
+                Stok: {{ kitap.stok }}
+            </span>
+            {% if kitap.kategori %}
+            <span class="badge">{{ kitap.kategori.ad }}</span>
+            {% endif %}
+        </div>
     </a>
     {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">Bu yazara ait kitap bulunamadı.</div>
+<div class="empty-state">Bu yazara ait kitap bulunamadi.</div>
 {% endif %}
 {% endblock %}

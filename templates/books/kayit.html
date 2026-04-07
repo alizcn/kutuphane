@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Kayit Ol - Kutuphane{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <h1>Kayit Ol</h1>
+
+    {% if form.non_field_errors %}
+    <div class="form-errors">
+        {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <div class="field-error">
+                {% for error in field.errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary btn-full">Kayit Ol</button>
+    </form>
+
+    <div class="auth-link">
+        Zaten hesabiniz var mi? <a href="{% url 'books:giris' %}">Giris Yapin</a>
+    </div>
+</div>
+{% endblock %}

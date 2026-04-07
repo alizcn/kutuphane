@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}{{ kitap.baslik }} - Kütüphane{% endblock %}
+{% block title %}{{ kitap.baslik }} - Kutuphane{% endblock %}
 
 {% block content %}
-<a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara dön</a>
+<a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara don</a>
 
 <div class="detail-card">
     <h1>{{ kitap.baslik }}</h1>
@@ -17,16 +17,18 @@
         <span>{{ kitap.kategori.ad|default:"-" }}</span>
     </div>
     <div class="info-row">
-        <span class="label">Yayın Yılı</span>
+        <span class="label">Yayin Yili</span>
         <span>{{ kitap.yayin_yili }}</span>
     </div>
     <div class="info-row">
-        <span class="label">Sayfa Sayısı</span>
+        <span class="label">Sayfa Sayisi</span>
         <span>{{ kitap.sayfa_sayisi }}</span>
     </div>
     <div class="info-row">
         <span class="label">Stok</span>
-        <span>{{ kitap.stok }} adet</span>
+        <span class="badge {% if kitap.stok > 10 %}stock-ok{% elif kitap.stok > 0 %}stock-low{% else %}stock-out{% endif %}">
+            {{ kitap.stok }} adet
+        </span>
     </div>
 
     {% if kitap.aciklama %}
@@ -34,5 +36,17 @@
         <p>{{ kitap.aciklama }}</p>
     </div>
     {% endif %}
+
+    <div class="detail-actions">
+        {% if user.is_authenticated %}
+            {% if kitap.odunc_alinabilir %}
+            <a href="{% url 'books:odunc_al' kitap.pk %}" class="btn btn-primary">Odunc Al</a>
+            {% else %}
+            <span class="btn btn-disabled">Stokta Yok</span>
+            {% endif %}
+        {% else %}
+            <a href="{% url 'books:giris' %}?next={% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary">Odunc almak icin giris yapin</a>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

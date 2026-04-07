@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Kutuphane{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+
+<!-- Ozet Kartlar -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ toplam_kitap }}</div>
+        <div class="stat-label">Toplam Kitap</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ toplam_yazar }}</div>
+        <div class="stat-label">Toplam Yazar</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ toplam_uye }}</div>
+        <div class="stat-label">Toplam Uye</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ aktif_odunc }}</div>
+        <div class="stat-label">Aktif Odunc</div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-number">{{ geciken_odunc }}</div>
+        <div class="stat-label">Geciken Iade</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Aylik Trend -->
+    <div class="dashboard-section">
+        <h2>Aylik Odunc Alma Trendi</h2>
+        <div class="chart-bar">
+            {% for item in aylik_trend %}
+            <div class="bar-item">
+                <div class="bar-fill" style="height: {{ item.oran }}%;" title="{{ item.ay }}: {{ item.sayi }}"></div>
+                <div class="bar-label">{{ item.ay_kisa }}</div>
+                <div class="bar-value">{{ item.sayi }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Kategori Dagilimi -->
+    <div class="dashboard-section">
+        <h2>Kategori Dagilimi</h2>
+        {% for kat in kategori_dagilimi %}
+        <div class="dist-row">
+            <span class="dist-label">{{ kat.ad }}</span>
+            <span class="dist-value">{{ kat.kitap_sayisi }} kitap</span>
+        </div>
+        {% empty %}
+        <div class="empty-state">Henuz kategori yok.</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Populer Kitaplar -->
+    <div class="dashboard-section">
+        <h2>En Cok Odunc Alinan Kitaplar</h2>
+        {% for kitap in populer_kitaplar %}
+        <div class="list-item">
+            <a href="{% url 'books:kitap_detay' kitap.pk %}">{{ kitap.baslik }}</a>
+            <span class="badge">{{ kitap.odunc_sayisi }} kez</span>
+        </div>
+        {% empty %}
+        <div class="empty-state">Henuz odunc alma islemi yok.</div>
+        {% endfor %}
+    </div>
+
+    <!-- Aktif Uyeler -->
+    <div class="dashboard-section">
+        <h2>En Aktif Uyeler</h2>
+        {% for uye in aktif_uyeler %}
+        <div class="list-item">
+            <span>{{ uye.get_full_name|default:uye.username }}</span>
+            <span class="badge">{{ uye.odunc_sayisi }} kitap</span>
+        </div>
+        {% empty %}
+        <div class="empty-state">Henuz aktif uye yok.</div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Son Islemler -->
+<div class="dashboard-section full-width">
+    <h2>Son Islemler</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Uye</th>
+                <th>Kitap</th>
+                <th>Odunc Tarihi</th>
+                <th>Son Iade Tarihi</th>
+                <th>Durum</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for islem in son_islemler %}
+            <tr>
+                <td>{{ islem.uye.get_full_name|default:islem.uye.username }}</td>
+                <td><a href="{% url 'books:kitap_detay' islem.kitap.pk %}">{{ islem.kitap.baslik }}</a></td>
+                <td>{{ islem.odunc_tarihi|date:"d.m.Y" }}</td>
+                <td>{{ islem.son_iade_tarihi|date:"d.m.Y" }}</td>
+                <td>
+                    {% if islem.aktif %}
+                        {% if islem.gecikme_var %}
+                        <span class="badge stock-out">Gecikme ({{ islem.gecikme_gun }} gun)</span>
+                        {% else %}
+                        <span class="badge stock-ok">Aktif ({{ islem.kalan_gun }} gun)</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="badge">Iade Edildi</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty-state">Henuz islem yok.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

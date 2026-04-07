@@ -4,16 +4,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Kütüphane{% endblock %}</title>
+    <title>{% block title %}Kutuphane{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <nav>
-        <a href="{% url 'books:kitap_listesi' %}" class="brand">Kütüphane</a>
-        <a href="{% url 'books:kitap_listesi' %}">Kitaplar</a>
-        <a href="/admin/">Yönetim</a>
+        <div class="nav-left">
+            <a href="{% url 'books:kitap_listesi' %}" class="brand">Kutuphane</a>
+            <a href="{% url 'books:kitap_listesi' %}">Kitaplar</a>
+            <a href="{% url 'books:dashboard' %}">Dashboard</a>
+            {% if user.is_staff %}
+            <a href="/admin/">Yonetim</a>
+            {% endif %}
+        </div>
+        <div class="nav-right">
+            {% if user.is_authenticated %}
+            <a href="{% url 'books:profil' %}">{{ user.get_full_name|default:user.username }}</a>
+            <a href="{% url 'books:cikis' %}">Cikis</a>
+            {% else %}
+            <a href="{% url 'books:giris' %}">Giris</a>
+            <a href="{% url 'books:kayit' %}">Kayit Ol</a>
+            {% endif %}
+        </div>
     </nav>
     <div class="container">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </div>
 </body>
