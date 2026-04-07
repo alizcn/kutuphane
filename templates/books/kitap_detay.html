@@ -5,7 +5,7 @@
 {% block content %}
 <a href="{% url 'books:kitap_listesi' %}" class="back-link">&larr; Kitaplara don</a>
 
-<div class="detail-card">
+<div class="detail-card" style="max-width:700px;">
     <h1>{{ kitap.baslik }}</h1>
 
     <div class="info-row">
@@ -40,12 +40,12 @@
     <div class="detail-actions">
         {% if user.is_authenticated %}
             {% if kitap.odunc_alinabilir %}
-            <a href="{% url 'books:odunc_al' kitap.pk %}" class="btn btn-primary">Odunc Al</a>
+            <a href="{% url 'books:odunc_al' kitap.pk %}" class="btn btn-primary btn-lg">Odunc Al</a>
             {% else %}
-            <span class="btn btn-disabled">Stokta Yok</span>
+            <span class="btn btn-disabled btn-lg">Stokta Yok</span>
             {% endif %}
         {% else %}
-            <a href="{% url 'books:giris' %}?next={% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary">Odunc almak icin giris yapin</a>
+            <a href="{% url 'books:giris' %}?next={% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary btn-lg">Odunc almak icin giris yapin</a>
         {% endif %}
     </div>
 </div>
