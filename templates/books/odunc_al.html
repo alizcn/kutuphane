@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Odunc Al - {{ kitap.baslik }} - Kutuphane{% endblock %}
+
+{% block content %}
+<a href="{% url 'books:kitap_detay' kitap.pk %}" class="back-link">&larr; Kitap detayina don</a>
+
+<div class="confirm-card">
+    <div class="confirm-icon confirm-icon-borrow">&#128214;</div>
+    <h1>Odunc Alma Onayi</h1>
+    <p class="text-muted">Asagidaki kitabi odunc almak istediginizden emin misiniz?</p>
+
+    <div class="confirm-details">
+        <div class="detail-line">
+            <span class="dl-label">Kitap</span>
+            <span class="dl-value">{{ kitap.baslik }}</span>
+        </div>
+        <div class="detail-line">
+            <span class="dl-label">Yazar</span>
+            <span class="dl-value">{{ kitap.yazar.ad }}</span>
+        </div>
+        <div class="detail-line">
+            <span class="dl-label">Mevcut Stok</span>
+            <span class="dl-value">{{ kitap.stok }} adet</span>
+        </div>
+        <div class="detail-line">
+            <span class="dl-label">Iade Suresi</span>
+            <span class="dl-value">15 gun</span>
+        </div>
+    </div>
+
+    {% if form.errors %}
+    <div class="form-errors">
+        {% for field in form %}
+            {% for error in field.errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.kitap_id }}
+        <div class="confirm-actions">
+            <a href="{% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary btn-lg">Vazgec</a>
+            {% if kitap.odunc_alinabilir %}
+            <button type="submit" class="btn btn-primary btn-lg">Odunc Al</button>
+            {% else %}
+            <span class="btn btn-disabled btn-lg">Stokta Yok</span>
+            {% endif %}
+        </div>
+    </form>
+
+    <p class="confirm-note">Kitabi iade suresi icinde iade etmeniz gerekmektedir.</p>
+</div>
+{% endblock %}

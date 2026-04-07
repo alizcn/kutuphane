@@ -5,6 +5,7 @@
 {% block content %}
 <div class="auth-card">
     <h1>Kayit Ol</h1>
+    <p class="text-center text-muted mb-2">Yeni hesap olusturun</p>
 
     {% if form.non_field_errors %}
     <div class="form-errors">
@@ -29,7 +30,7 @@
             {% endif %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary btn-full">Kayit Ol</button>
+        <button type="submit" class="btn btn-primary btn-full btn-lg">Kayit Ol</button>
     </form>
 
     <div class="auth-link">

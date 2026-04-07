@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Iade Et - {{ odunc.kitap.baslik }} - Kutuphane{% endblock %}
+
+{% block content %}
+<a href="{% url 'books:profil' %}" class="back-link">&larr; Profilime don</a>
+
+<div class="confirm-card">
+    <div class="confirm-icon confirm-icon-return">&#9989;</div>
+    <h1>Iade Onayi</h1>
+    <p class="text-muted">Asagidaki kitabi iade etmek istediginizden emin misiniz?</p>
+
+    <div class="confirm-details">
+        <div class="detail-line">
+            <span class="dl-label">Kitap</span>
+            <span class="dl-value">{{ odunc.kitap.baslik }}</span>
+        </div>
+        <div class="detail-line">
+            <span class="dl-label">Yazar</span>
+            <span class="dl-value">{{ odunc.kitap.yazar.ad }}</span>
+        </div>
+        <div class="detail-line">
+            <span class="dl-label">Odunc Tarihi</span>
+            <span class="dl-value">{{ odunc.odunc_tarihi|date:"d.m.Y" }}</span>
+        </div>
+        <div class="detail-line">
+            <span class="dl-label">Son Iade Tarihi</span>
+            <span class="dl-value">{{ odunc.son_iade_tarihi|date:"d.m.Y" }}</span>
+        </div>
+        <div class="detail-line">
+            <span class="dl-label">Durum</span>
+            <span class="dl-value">
+                {% if odunc.gecikme_var %}
+                <span class="badge stock-out">{{ odunc.gecikme_gun }} gun gecikme</span>
+                {% else %}
+                <span class="badge stock-ok">{{ odunc.kalan_gun }} gun kaldi</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="confirm-actions">
+            <a href="{% url 'books:profil' %}" class="btn btn-secondary btn-lg">Vazgec</a>
+            <button type="submit" class="btn btn-success btn-lg">Iade Et</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

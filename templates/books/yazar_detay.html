@@ -32,6 +32,9 @@
     {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">Bu yazara ait kitap bulunamadi.</div>
+<div class="empty-state">
+    <span class="empty-state-icon">&#128214;</span>
+    Bu yazara ait kitap bulunamadi.
+</div>
 {% endif %}
 {% endblock %}

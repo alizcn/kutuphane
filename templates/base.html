@@ -23,10 +23,11 @@
             <a href="{% url 'books:cikis' %}">Cikis</a>
             {% else %}
             <a href="{% url 'books:giris' %}">Giris</a>
-            <a href="{% url 'books:kayit' %}">Kayit Ol</a>
+            <a href="{% url 'books:kayit' %}" class="btn btn-accent btn-sm">Kayit Ol</a>
             {% endif %}
         </div>
     </nav>
+
     <div class="container">
         {% if messages %}
         <div class="messages">
@@ -37,7 +38,12 @@
             {% endfor %}
         </div>
         {% endif %}
+
         {% block content %}{% endblock %}
     </div>
+
+    <footer class="site-footer">
+        Kutuphane Yonetim Sistemi &copy; 2026
+    </footer>
 </body>
 </html>

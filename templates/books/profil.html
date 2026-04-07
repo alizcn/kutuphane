@@ -56,18 +56,21 @@
             </div>
             <form method="post" action="{% url 'books:iade_et' odunc.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-secondary btn-sm">Iade Et</button>
+                <button type="submit" class="btn btn-accent btn-sm">Iade Et</button>
             </form>
         </div>
         {% empty %}
-        <div class="empty-state">Aktif odunc isleminiz yok.</div>
+        <div class="empty-state">
+            <span class="empty-state-icon">&#128218;</span>
+            Aktif odunc isleminiz yok.
+        </div>
         {% endfor %}
     </div>
 </div>
 
 <!-- Gecmis Islemler -->
 {% if gecmis_oduncler %}
-<div class="detail-card full-width" style="margin-top: 1.5rem;">
+<div class="detail-card full-width mt-3">
     <h2>Gecmis Islemler</h2>
     <table class="data-table">
         <thead>
