@@ -3,13 +3,13 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Avg
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import Kitap, Yazar, Kategori, UyeProfil, OduncAlma, ODUNC_SURESI_GUN
-from .forms import KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu
+from .models import Kitap, Yazar, Kategori, UyeProfil, OduncAlma, KitapDegerlendirme, ODUNC_SURESI_GUN
+from .forms import KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu, DegerlendirmeFormu
 
 
 # ──────────────────────────────────────────────
@@ -46,7 +46,42 @@ def kitap_detay(request, pk):
     kitap = get_object_or_404(
         Kitap.objects.select_related('yazar', 'kategori'), pk=pk
     )
-    return render(request, 'books/kitap_detay.html', {'kitap': kitap})
+
+    # Degerlendirmeler listesi
+    degerlendirmeler = (
+        kitap.degerlendirmeler
+        .select_related('kullanici')
+        .order_by('-olusturma_tarihi')
+    )
+
+    # Ortalama puan ve sayisi
+    puan_ozeti = kitap.degerlendirmeler.aggregate(
+        ortalama=Avg('puan'),
+        toplam=Count('id'),
+    )
+    ortalama_puan = round(puan_ozeti['ortalama'], 1) if puan_ozeti['ortalama'] else None
+    degerlendirme_sayisi = puan_ozeti['toplam']
+
+    # Kullanicinin mevcut degerlendirmesi
+    kullanici_degerlendirmesi = None
+    degerlendirme_form = None
+    if request.user.is_authenticated:
+        try:
+            kullanici_degerlendirmesi = KitapDegerlendirme.objects.get(
+                kullanici=request.user, kitap=kitap
+            )
+        except KitapDegerlendirme.DoesNotExist:
+            degerlendirme_form = DegerlendirmeFormu()
+
+    return render(request, 'books/kitap_detay.html', {
+        'kitap': kitap,
+        'degerlendirmeler': degerlendirmeler,
+        'kullanici_degerlendirmesi': kullanici_degerlendirmesi,
+        'degerlendirme_form': degerlendirme_form,
+        'ortalama_puan': ortalama_puan,
+        'degerlendirme_sayisi': degerlendirme_sayisi,
+        'yildiz_araligi': range(1, 6),
+    })
 
 
 def yazar_detay(request, pk):
@@ -80,6 +115,16 @@ def dashboard(request):
         Kitap.objects.annotate(odunc_sayisi=Count('odunc_islemleri'))
         .filter(odunc_sayisi__gt=0)
         .order_by('-odunc_sayisi')[:5]
+    )
+
+    # --- En Yuksek Puanli 5 Kitap ---
+    en_yuksek_puanli = (
+        Kitap.objects.annotate(
+            ort_puan=Avg('degerlendirmeler__puan'),
+            deg_sayisi=Count('degerlendirmeler'),
+        )
+        .filter(deg_sayisi__gt=0)
+        .order_by('-ort_puan', '-deg_sayisi')[:5]
     )
 
     # --- En Aktif 5 Uye ---
@@ -151,6 +196,7 @@ def dashboard(request):
         'aktif_odunc': aktif_odunc,
         'geciken_odunc': geciken_odunc,
         'populer_kitaplar': populer_kitaplar,
+        'en_yuksek_puanli': en_yuksek_puanli,
         'aktif_uyeler': aktif_uyeler,
         'kategori_dagilimi': kategori_dagilimi,
         'aylik_trend': aylik_trend,
@@ -303,3 +349,34 @@ def iade_et(request, pk):
         return redirect('books:profil')
 
     return render(request, 'books/iade_et.html', {'odunc': odunc})
+
+
+# ──────────────────────────────────────────────
+# Degerlendirme View'lari
+# ──────────────────────────────────────────────
+
+@login_required
+def degerlendirme_ekle(request, pk):
+    """Kitaba yeni degerlendirme ekler. Her kullanici bir kitaba yalnizca bir kez puan verebilir."""
+    kitap = get_object_or_404(Kitap, pk=pk)
+
+    # Kullanici bu kitabi zaten degerlendirmis mi?
+    if KitapDegerlendirme.objects.filter(kullanici=request.user, kitap=kitap).exists():
+        messages.warning(request, 'Bu kitabi zaten degerlendirdiniz.')
+        return redirect('books:kitap_detay', pk=kitap.pk)
+
+    if request.method == 'POST':
+        form = DegerlendirmeFormu(request.POST)
+        if form.is_valid():
+            degerlendirme = form.save(commit=False)
+            degerlendirme.kullanici = request.user
+            degerlendirme.kitap = kitap
+            degerlendirme.save()
+            messages.success(request, 'Degerlendirmeniz basariyla kaydedildi! Tesekkurler.')
+        else:
+            messages.error(
+                request,
+                'Degerlendirme kaydedilemedi. Lutfen 1-5 arasinda bir puan secin.'
+            )
+
+    return redirect('books:kitap_detay', pk=kitap.pk)

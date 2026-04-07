@@ -9,6 +9,25 @@
     <h1>{{ kitap.baslik }}</h1>
     <p class="text-muted mb-2">{{ kitap.yazar.ad }} tarafindan yazilmistir</p>
 
+    <!-- Ortalama Puan Ozeti -->
+    {% if ortalama_puan %}
+    <div class="rating-summary">
+        <div class="rating-score">{{ ortalama_puan }}</div>
+        <div class="rating-detail">
+            <div class="stars-display">
+                {% for i in yildiz_araligi %}
+                    {% if i <= ortalama_puan %}
+                        <span class="star star-filled">&#9733;</span>
+                    {% else %}
+                        <span class="star star-empty">&#9734;</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="rating-count">{{ degerlendirme_sayisi }} degerlendirme</div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="info-grid">
         <div class="info-row">
             <span class="label">&#9998; Yazar</span>
@@ -53,6 +72,118 @@
             <a href="{% url 'books:giris' %}?next={% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary btn-lg">&#128100; Odunc almak icin giris yapin</a>
         {% endif %}
         <a href="{% url 'books:yazar_detay' kitap.yazar.pk %}" class="btn btn-ghost">Yazarin diger kitaplari &rarr;</a>
+    </div>
+</div>
+
+<!-- ─── Degerlendirme Bolumu ─── -->
+<div class="reviews-section" style="max-width:720px;">
+
+    <!-- Degerlendirme Formu -->
+    {% if user.is_authenticated %}
+        {% if kullanici_degerlendirmesi %}
+        <div class="review-card review-card-mine">
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <span class="reviewer-avatar">{{ user.first_name|first|default:user.username|first }}</span>
+                    <div>
+                        <span class="reviewer-name">Sizin Degerlendirmeniz</span>
+                        <div class="review-date">{{ kullanici_degerlendirmesi.olusturma_tarihi|date:"d.m.Y" }}</div>
+                    </div>
+                </div>
+                <div class="stars-display">
+                    {% for i in yildiz_araligi %}
+                        {% if i <= kullanici_degerlendirmesi.puan %}
+                            <span class="star star-filled">&#9733;</span>
+                        {% else %}
+                            <span class="star star-empty">&#9734;</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% if kullanici_degerlendirmesi.yorum %}
+            <p class="review-text">{{ kullanici_degerlendirmesi.yorum }}</p>
+            {% endif %}
+        </div>
+        {% elif degerlendirme_form %}
+        <div class="review-form-card">
+            <h2><span class="section-icon">&#9998;</span> Degerlendirme Yap</h2>
+            <form method="post" action="{% url 'books:degerlendirme_ekle' kitap.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Puaniniz <span style="color:var(--danger);">*</span></label>
+                    <div class="star-rating-input" title="Bir puan seciniz">
+                        <input type="radio" id="star5" name="puan" value="5">
+                        <label for="star5" title="5 - Mukemmel">&#9733;</label>
+                        <input type="radio" id="star4" name="puan" value="4">
+                        <label for="star4" title="4 - Cok Iyi">&#9733;</label>
+                        <input type="radio" id="star3" name="puan" value="3">
+                        <label for="star3" title="3 - Iyi">&#9733;</label>
+                        <input type="radio" id="star2" name="puan" value="2">
+                        <label for="star2" title="2 - Orta">&#9733;</label>
+                        <input type="radio" id="star1" name="puan" value="1">
+                        <label for="star1" title="1 - Kotu">&#9733;</label>
+                    </div>
+                    <div class="star-labels">
+                        <span>Kotu</span><span>Mukemmel</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="yorum">Yorumunuz <span class="text-muted" style="font-weight:400;">(opsiyonel)</span></label>
+                    <textarea name="yorum" id="yorum" rows="4"
+                        placeholder="Kitap hakkindaki dusuncelerinizi paylasabilirsiniz..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">&#9733; Degerlendirmeyi Gonder</button>
+            </form>
+        </div>
+        {% endif %}
+    {% else %}
+    <div class="review-form-card" style="text-align:center; padding: 2rem;">
+        <p style="color:var(--text-muted); margin-bottom:1rem;">&#128100; Degerlendirme yapmak icin giris yapmaniz gerekmektedir.</p>
+        <a href="{% url 'books:giris' %}?next={% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary">Giris Yap</a>
+    </div>
+    {% endif %}
+
+    <!-- Yorumlar Listesi -->
+    <div class="reviews-list">
+        <h2 style="font-size:1.15rem; font-weight:700; color:var(--primary); margin-bottom:1.25rem; padding-bottom:0.75rem; border-bottom:2px solid var(--border-light); display:flex; align-items:center; gap:0.5rem;">
+            <span>&#128172;</span> Yorumlar
+            {% if degerlendirme_sayisi %}
+            <span class="badge badge-info">{{ degerlendirme_sayisi }}</span>
+            {% endif %}
+        </h2>
+
+        {% for d in degerlendirmeler %}
+        {% if d.kullanici != request.user %}
+        <div class="review-card">
+            <div class="review-header">
+                <div class="reviewer-info">
+                    <span class="reviewer-avatar">{{ d.kullanici.first_name|first|default:d.kullanici.username|first }}</span>
+                    <div>
+                        <span class="reviewer-name">{{ d.kullanici.get_full_name|default:d.kullanici.username }}</span>
+                        <div class="review-date">{{ d.olusturma_tarihi|date:"d.m.Y" }}</div>
+                    </div>
+                </div>
+                <div class="stars-display">
+                    {% for i in yildiz_araligi %}
+                        {% if i <= d.puan %}
+                            <span class="star star-filled">&#9733;</span>
+                        {% else %}
+                            <span class="star star-empty">&#9734;</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% if d.yorum %}
+            <p class="review-text">{{ d.yorum }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% empty %}
+        <div class="empty-state">
+            <span class="empty-state-icon">&#128172;</span>
+            <p>Bu kitap icin henuz yorum yapilmamis. Ilk degerlendirmeyi siz yapin!</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

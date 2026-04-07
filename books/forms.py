@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from .models import UyeProfil, Kitap
+from .models import UyeProfil, Kitap, KitapDegerlendirme
 
 
 class KayitFormu(forms.ModelForm):
@@ -148,3 +148,27 @@ class OduncAlmaFormu(forms.Form):
         if kitap.stok <= 0:
             raise forms.ValidationError('Bu kitap su anda stokta bulunmuyor.')
         return kitap_id
+
+
+class DegerlendirmeFormu(forms.ModelForm):
+    """Kitap degerlendirme ve yorum formu."""
+
+    class Meta:
+        model = KitapDegerlendirme
+        fields = ['puan', 'yorum']
+        labels = {
+            'puan': 'Puaniniz',
+            'yorum': 'Yorumunuz (Opsiyonel)',
+        }
+        widgets = {
+            'yorum': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Kitap hakkindaki dusuncelerinizi paylasabilirsiniz...',
+            }),
+        }
+
+    def clean_puan(self):
+        puan = self.cleaned_data.get('puan')
+        if puan is None or not (1 <= int(puan) <= 5):
+            raise forms.ValidationError('Puan 1 ile 5 arasinda olmalidir.')
+        return puan

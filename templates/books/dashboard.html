@@ -109,6 +109,40 @@
     </div>
 </div>
 
+<!-- En Yuksek Puanli Kitaplar -->
+<div class="dashboard-section full-width">
+    <h2><span class="section-icon">&#127775;</span> En Yuksek Puanli Kitaplar</h2>
+    {% if en_yuksek_puanli %}
+    <div class="top-rated-grid">
+        {% for kitap in en_yuksek_puanli %}
+        <div class="top-rated-card">
+            <div class="top-rated-rank">{{ forloop.counter }}</div>
+            <div class="top-rated-info">
+                <a href="{% url 'books:kitap_detay' kitap.pk %}" class="top-rated-title">{{ kitap.baslik }}</a>
+                <div class="top-rated-author">{{ kitap.yazar.ad }}</div>
+                <div class="top-rated-stars">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= kitap.ort_puan %}
+                            <span class="star star-filled">&#9733;</span>
+                        {% else %}
+                            <span class="star star-empty">&#9734;</span>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="top-rated-score">{{ kitap.ort_puan|floatformat:1 }}</span>
+                </div>
+            </div>
+            <span class="badge badge-rating">{{ kitap.deg_sayisi }} yorum</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">&#127775;</span>
+        <p>Henuz hicbir kitap degerlendirme almamis.</p>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Son Islemler -->
 <div class="dashboard-section full-width">
     <h2><span class="section-icon">&#128338;</span> Son Islemler</h2>
