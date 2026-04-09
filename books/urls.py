@@ -24,4 +24,9 @@ urlpatterns = [
 
     # Degerlendirme
     path('kitap/<int:pk>/degerlendirme/', views.degerlendirme_ekle, name='degerlendirme_ekle'),
+    
+    # Takas
+    path('takas/gonder/<int:pk>/', views.takas_teklifi_gonder, name='takas_teklifi_gonder'),
+    path('takas/<int:pk>/onayla/', views.takas_teklifi_onayla, name='takas_teklifi_onayla'),
+    path('takas/<int:pk>/reddet/', views.takas_teklifi_reddet, name='takas_teklifi_reddet'),
 ]

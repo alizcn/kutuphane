@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">&#128100; Profilim</h1>
-    <p class="page-subtitle">Bilgilerinizi guncelleyin ve odunc islemlerinizi yonetin.</p>
+    <p class="page-subtitle">Bilgilerinizi guncelleyin, odunc islemlerinizi ve takas tekliflerinizi yonetin.</p>
 </div>
 
 <div class="profile-grid">
@@ -72,7 +72,7 @@
 <!-- Gecmis Islemler -->
 {% if gecmis_oduncler %}
 <div class="detail-card full-width mt-3">
-    <h2><span class="section-icon">&#128338;</span> Gecmis Islemler</h2>
+    <h2><span class="section-icon">&#128338;</span> Gecmis Odunc Islemleri</h2>
     <div class="table-wrapper">
         <table class="data-table">
             <thead>
@@ -95,4 +95,219 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Takasa Acik Kitaplarin -->
+<div class="detail-card full-width mt-3">
+    <h2><span class="section-icon">&#128538;</span> Takasa Acik Kitaplarin ({{ takasa_acik_kitaplar.count }})</h2>
+    {% if takasa_acik_kitaplar %}
+    <div class="kitap-grid">
+        {% for kitap in takasa_acik_kitaplar %}
+        <div class="kitap-card">
+            <div class="kitap-info">
+                <h3 class="kitap-title">{{ kitap.baslik }}</h3>
+                <p class="kitap-author">{{ kitap.yazar.ad }}</p>
+                <p class="kitap-category">{{ kitap.kategori.ad }}</p>
+                <p class="kitap-desc">{{ kitap.aciklama|truncatewords:15 }}</p>
+            </div>
+            <div class="kitap-actions">
+                <a href="{% url 'books:kitap_detay' kitap.pk %}" class="btn btn-secondary btn-sm">Detay Goster</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <span class="empty-state-icon">&#128538;</span>
+        <p>Takasa acik kitabiniz bulunmuyor.</p>
+        <p class="small-text">Admin panelinden kitaplar icin "takasa acik" secenegini etkinlestirip, diger kullanicilar ile takas yapabilirsiniz.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Takas Teklifleri Grid -->
+<div class="profile-grid mt-3">
+    <!-- Gelen Takas Teklifleri -->
+    <div class="detail-card">
+        <h2><span class="section-icon">&#128231;</span> Gelen Takas Teklifleri ({{ gelen_teklifler.count }})</h2>
+        {% for teklif in gelen_teklifler %}
+        <div class="takas-card">
+            <div class="takas-header">
+                <strong>{{ teklif.gonderici.get_full_name|default:teklif.gonderici.username }}</strong>
+                <span class="badge badge-{{ teklif.durum }}">{{ teklif.get_durum_display }}</span>
+            </div>
+            <div class="takas-body">
+                <p><strong>Verilen Kitap:</strong> <a href="{% url 'books:kitap_detay' teklif.gonderici_kitap.pk %}">{{ teklif.gonderici_kitap.baslik }}</a></p>
+                <p><strong>Istenen Kitap:</strong> <a href="{% url 'books:kitap_detay' teklif.alici_kitap.pk %}">{{ teklif.alici_kitap.baslik }}</a></p>
+                {% if teklif.aciklama %}
+                <p><strong>Aciklama:</strong> {{ teklif.aciklama }}</p>
+                {% endif %}
+                <p class="small-text">{{ teklif.olusturma_tarihi|date:"d.m.Y H:i" }}</p>
+            </div>
+            {% if teklif.beklemede %}
+            <div class="takas-actions">
+                <a href="{% url 'books:takas_teklifi_onayla' teklif.pk %}" class="btn btn-primary btn-sm">&#10003; Onayla</a>
+                <a href="{% url 'books:takas_teklifi_reddet' teklif.pk %}" class="btn btn-danger btn-sm">&#10005; Reddet</a>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <span class="empty-state-icon">&#128231;</span>
+            <p>Gelen takas teklifiniz bulunmuyor.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Giden Takas Teklifleri -->
+    <div class="detail-card">
+        <h2><span class="section-icon">&#128227;</span> Giden Takas Teklifleri ({{ giden_teklifler.count }})</h2>
+        {% for teklif in giden_teklifler %}
+        <div class="takas-card">
+            <div class="takas-header">
+                <strong>{{ teklif.alici.get_full_name|default:teklif.alici.username }}</strong>
+                <span class="badge badge-{{ teklif.durum }}">{{ teklif.get_durum_display }}</span>
+            </div>
+            <div class="takas-body">
+                <p><strong>Verilen Kitap:</strong> <a href="{% url 'books:kitap_detay' teklif.gonderici_kitap.pk %}">{{ teklif.gonderici_kitap.baslik }}</a></p>
+                <p><strong>Istenen Kitap:</strong> <a href="{% url 'books:kitap_detay' teklif.alici_kitap.pk %}">{{ teklif.alici_kitap.baslik }}</a></p>
+                {% if teklif.aciklama %}
+                <p><strong>Aciklama:</strong> {{ teklif.aciklama }}</p>
+                {% endif %}
+                <p class="small-text">{{ teklif.olusturma_tarihi|date:"d.m.Y H:i" }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <span class="empty-state-icon">&#128227;</span>
+            <p>Giden takas teklifiniz bulunmuyor.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.takas-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.takas-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.takas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.takas-header strong {
+    color: #2c3e50;
+}
+
+.takas-body p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.takas-body a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.takas-body a:hover {
+    text-decoration: underline;
+}
+
+.takas-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.badge-beklemede {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.badge-kabul_edildi {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.badge-reddedildi {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.kitap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.kitap-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kitap-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.kitap-info {
+    margin-bottom: 12px;
+}
+
+.kitap-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+}
+
+.kitap-author {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin: 4px 0;
+}
+
+.kitap-category {
+    font-size: 12px;
+    background: #ecf0f1;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #34495e;
+    margin: 4px 0;
+}
+
+.kitap-desc {
+    font-size: 13px;
+    color: #555;
+    margin-top: 8px;
+}
+
+.kitap-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.small-text {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+</style>
 {% endblock %}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Yazar, Kategori, Kitap, UyeProfil, OduncAlma, KitapDegerlendirme
+from .models import Yazar, Kategori, Kitap, UyeProfil, OduncAlma, KitapDegerlendirme, KitapTakasi
 
 
 @admin.register(Yazar)
@@ -16,8 +16,8 @@ class KategoriAdmin(admin.ModelAdmin):
 
 @admin.register(Kitap)
 class KitapAdmin(admin.ModelAdmin):
-    list_display = ('baslik', 'yazar', 'kategori', 'yayin_yili', 'stok')
-    list_filter = ('kategori', 'yazar')
+    list_display = ('baslik', 'yazar', 'kategori', 'yayin_yili', 'stok', 'takasa_acik')
+    list_filter = ('kategori', 'yazar', 'takasa_acik')
     search_fields = ('baslik', 'yazar__ad')
 
 
@@ -42,3 +42,12 @@ class KitapDegerlendirmeAdmin(admin.ModelAdmin):
     search_fields = ('kullanici__username', 'kitap__baslik', 'yorum')
     raw_id_fields = ('kullanici', 'kitap')
     readonly_fields = ('olusturma_tarihi',)
+
+
+@admin.register(KitapTakasi)
+class KitapTakasıAdmin(admin.ModelAdmin):
+    list_display = ('gonderici', 'alici', 'gonderici_kitap', 'alici_kitap', 'durum', 'olusturma_tarihi')
+    list_filter = ('durum', 'olusturma_tarihi')
+    search_fields = ('gonderici__username', 'alici__username', 'gonderici_kitap__baslik', 'alici_kitap__baslik')
+    raw_id_fields = ('gonderici', 'alici', 'gonderici_kitap', 'alici_kitap')
+    readonly_fields = ('olusturma_tarihi', 'gunceleme_tarihi')
