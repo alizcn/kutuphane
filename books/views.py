@@ -8,8 +8,15 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import Kitap, Yazar, Kategori, UyeProfil, OduncAlma, KitapDegerlendirme, ODUNC_SURESI_GUN
-from .forms import KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu, DegerlendirmeFormu
+from .models import (
+    Kitap, Yazar, Kategori, UyeProfil, OduncAlma,
+    KitapDegerlendirme, KullaniciKitap, TakasTeklifi,
+    ODUNC_SURESI_GUN,
+)
+from .forms import (
+    KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu,
+    DegerlendirmeFormu, KullaniciKitapFormu, TakasTeklifiFormu,
+)
 
 
 # ──────────────────────────────────────────────
@@ -101,7 +108,6 @@ def dashboard(request):
     """Dashboard sayfasi - Kutuphane istatistikleri ve ozet bilgiler."""
     simdi = timezone.now()
 
-    # --- Ozet Kartlar ---
     toplam_kitap = Kitap.objects.count()
     toplam_yazar = Yazar.objects.count()
     toplam_uye = User.objects.filter(is_staff=False).count()
@@ -110,14 +116,12 @@ def dashboard(request):
         aktif=True, son_iade_tarihi__lt=simdi
     ).count()
 
-    # --- En Cok Odunc Alinan 5 Kitap ---
     populer_kitaplar = (
         Kitap.objects.annotate(odunc_sayisi=Count('odunc_islemleri'))
         .filter(odunc_sayisi__gt=0)
         .order_by('-odunc_sayisi')[:5]
     )
 
-    # --- En Yuksek Puanli 5 Kitap ---
     en_yuksek_puanli = (
         Kitap.objects.annotate(
             ort_puan=Avg('degerlendirmeler__puan'),
@@ -127,7 +131,6 @@ def dashboard(request):
         .order_by('-ort_puan', '-deg_sayisi')[:5]
     )
 
-    # --- En Aktif 5 Uye ---
     aktif_uyeler = (
         User.objects.filter(is_staff=False)
         .annotate(odunc_sayisi=Count('odunc_islemleri'))
@@ -135,13 +138,11 @@ def dashboard(request):
         .order_by('-odunc_sayisi')[:5]
     )
 
-    # --- Kategorilere Gore Kitap Dagilimi ---
     kategori_dagilimi = (
         Kategori.objects.annotate(kitap_sayisi=Count('kitaplar'))
         .order_by('-kitap_sayisi')
     )
 
-    # --- Aylik Odunc Alma Trendi (Son 12 Ay) ---
     on_iki_ay_once = simdi - timedelta(days=365)
     aylik_islemler = (
         OduncAlma.objects.filter(odunc_tarihi__gte=on_iki_ay_once)
@@ -151,7 +152,6 @@ def dashboard(request):
         .order_by('ay')
     )
 
-    # Aylik trend verisini duzenle (son 12 ayi doldur)
     aylik_trend = []
     ay_map = {}
     for item in aylik_islemler:
@@ -175,7 +175,6 @@ def dashboard(request):
             'sayi': sayi,
         })
 
-    # Trend'deki maks deger (bar yukseklik orani icin)
     max_aylik = max((item['sayi'] for item in aylik_trend), default=1)
     if max_aylik == 0:
         max_aylik = 1
@@ -183,7 +182,6 @@ def dashboard(request):
     for item in aylik_trend:
         item['oran'] = int((item['sayi'] / max_aylik) * 100)
 
-    # --- Son Islemler (Timeline) ---
     son_islemler = (
         OduncAlma.objects.select_related('uye', 'kitap')
         .order_by('-odunc_tarihi')[:15]
@@ -275,11 +273,33 @@ def profil_view(request):
         uye=request.user, aktif=False
     ).select_related('kitap').order_by('-teslim_tarihi')[:10]
 
+    # Takasa acik kitaplar
+    kullanici_kitaplari = KullaniciKitap.objects.filter(
+        sahip=request.user
+    ).exclude(durum='kaldirildi').order_by('-olusturma_tarihi')
+
+    # Gelen teklifler (kullanicinin kitaplarindan birine yapilan)
+    gelen_teklifler = TakasTeklifi.objects.filter(
+        alici=request.user
+    ).select_related(
+        'gonderen', 'teklif_edilen_kitap', 'istenen_kitap'
+    ).order_by('-olusturma_tarihi')
+
+    # Giden teklifler (kullanicinin gonderdigi)
+    giden_teklifler = TakasTeklifi.objects.filter(
+        gonderen=request.user
+    ).select_related(
+        'alici', 'teklif_edilen_kitap', 'istened_kitap'
+    ).order_by('-olusturma_tarihi')
+
     return render(request, 'books/profil.html', {
         'form': form,
         'profil': profil,
         'aktif_oduncler': aktif_oduncler,
         'gecmis_oduncler': gecmis_oduncler,
+        'kullanici_kitaplari': kullanici_kitaplari,
+        'gelen_teklifler': gelen_teklifler,
+        'giden_teklifler': giden_teklifler,
     })
 
 
@@ -294,7 +314,6 @@ def odunc_al(request, pk):
     if request.method == 'POST':
         form = OduncAlmaFormu(request.POST)
         if form.is_valid():
-            # Zaten bu kitabi odunc almis mi kontrol et
             zaten_odunc = OduncAlma.objects.filter(
                 uye=request.user, kitap=kitap, aktif=True
             ).exists()
@@ -306,7 +325,6 @@ def odunc_al(request, pk):
                 messages.error(request, 'Bu kitap stokta bulunmuyor.')
                 return redirect('books:kitap_detay', pk=kitap.pk)
 
-            # Odunc alma islemi
             OduncAlma.objects.create(
                 uye=request.user,
                 kitap=kitap,
@@ -360,7 +378,6 @@ def degerlendirme_ekle(request, pk):
     """Kitaba yeni degerlendirme ekler. Her kullanici bir kitaba yalnizca bir kez puan verebilir."""
     kitap = get_object_or_404(Kitap, pk=pk)
 
-    # Kullanici bu kitabi zaten degerlendirmis mi?
     if KitapDegerlendirme.objects.filter(kullanici=request.user, kitap=kitap).exists():
         messages.warning(request, 'Bu kitabi zaten degerlendirdiniz.')
         return redirect('books:kitap_detay', pk=kitap.pk)
@@ -380,3 +397,202 @@ def degerlendirme_ekle(request, pk):
             )
 
     return redirect('books:kitap_detay', pk=kitap.pk)
+
+
+# ──────────────────────────────────────────────
+# Takas View'lari
+# ──────────────────────────────────────────────
+
+def takasa_acik_kitaplar(request):
+    """Tüm kullanıcıların takasa açık kitapları."""
+    arama = request.GET.get('q', '').strip()
+
+    kitaplar = KullaniciKitap.objects.filter(
+        durum='musait'
+    ).select_related('sahip')
+
+    # Giriş yapan kullanıcının kendi kitaplarını gösterme
+    if request.user.is_authenticated:
+        kitaplar = kitaplar.exclude(sahip=request.user)
+
+    if arama:
+        kitaplar = kitaplar.filter(
+            Q(kitap_adi__icontains=arama) | Q(yazar_adi__icontains=arama)
+        )
+
+    return render(request, 'books/takasa_acik_kitaplar.html', {
+        'kitaplar': kitaplar,
+        'arama': arama,
+    })
+
+
+@login_required
+def kullanici_kitap_ekle(request):
+    """Kullanıcının takasa açmak istediği kitabı ekler."""
+    if request.method == 'POST':
+        form = KullaniciKitapFormu(request.POST)
+        if form.is_valid():
+            kitap = form.save(commit=False)
+            kitap.sahip = request.user
+            kitap.save()
+            messages.success(
+                request,
+                f'"{kitap.kitap_adi}" başarıyla takasa açıldı!'
+            )
+            return redirect('books:profil')
+    else:
+        form = KullaniciKitapFormu()
+
+    return render(request, 'books/kitap_ekle_takas.html', {'form': form})
+
+
+@login_required
+def kullanici_kitap_sil(request, pk):
+    """Kullanıcının takasa açık kitabını kaldırır."""
+    kitap = get_object_or_404(KullaniciKitap, pk=pk, sahip=request.user)
+
+    if kitap.bekleyen_teklif_sayisi > 0:
+        messages.warning(
+            request,
+            f'"{kitap.kitap_adi}" için bekleyen teklifler var. '
+            'Önce teklifleri yanıtlayın.'
+        )
+        return redirect('books:profil')
+
+    if request.method == 'POST':
+        kitap.durum = 'kaldirildi'
+        kitap.save()
+        messages.success(request, f'"{kitap.kitap_adi}" takasdan kaldırıldı.')
+        return redirect('books:profil')
+
+    return redirect('books:profil')
+
+
+@login_required
+def takas_teklifi_gonder(request, kitap_pk):
+    """
+    Başka bir kullanıcının kitabına takas teklifi gönderir.
+    kitap_pk: alıcının (istenen) kitabının ID'si.
+    """
+    istenen_kitap = get_object_or_404(
+        KullaniciKitap, pk=kitap_pk, durum='musait'
+    )
+
+    # Kendi kitabına teklif gönderilemez
+    if istened_kitap.sahip == request.user:
+        messages.error(request, 'Kendi kitabınıza teklif gönderemezsiniz.')
+        return redirect('books:takasa_acik_kitaplar')
+
+    # Kullanıcının teklif edebileceği kitabı var mı?
+    teklif_edilebilir_kitaplar = KullaniciKitap.objects.filter(
+        sahip=request.user, durum='musait'
+    )
+    if not teklif_edilebilir_kitaplar.exists():
+        messages.warning(
+            request,
+            'Teklif göndermek için önce takasa açık bir kitabınız olması gerekiyor.'
+        )
+        return redirect('books:kullanici_kitap_ekle')
+
+    # Aynı kitap çifti için zaten bekleyen teklif var mı?
+    zaten_teklif_var = TakasTeklifi.objects.filter(
+        gonderen=request.user,
+        istened_kitap=istened_kitap,
+        durum='beklemede',
+    ).exists()
+    if zaten_teklif_var:
+        messages.warning(request, 'Bu kitap için zaten bekleyen bir teklifiniz var.')
+        return redirect('books:takasa_acik_kitaplar')
+
+    if request.method == 'POST':
+        form = TakasTeklifiFormu(request.POST, user=request.user)
+        if form.is_valid():
+            teklif_edilen = form.cleaned_data['teklif_edilen_kitap']
+            mesaj = form.cleaned_data.get('mesaj', '')
+
+            TakasTeklifi.objects.create(
+                gonderen=request.user,
+                alici=istened_kitap.sahip,
+                teklif_edilen_kitap=teklif_edilen,
+                istened_kitap=istened_kitap,
+                mesaj=mesaj,
+            )
+            messages.success(
+                request,
+                f'"{istened_kitap.kitap_adi}" için takas teklifiniz gönderildi!'
+            )
+            return redirect('books:profil')
+    else:
+        form = TakasTeklifiFormu(user=request.user)
+
+    return render(request, 'books/takas_teklifi_gonder.html', {
+        'form': form,
+        'istened_kitap': istened_kitap,
+        'teklif_edilebilir_kitaplar': teklif_edilebilir_kitaplar,
+    })
+
+
+@login_required
+def teklif_onayla(request, pk):
+    """Gelen takas teklifini onaylar."""
+    teklif = get_object_or_404(TakasTeklifi, pk=pk, alici=request.user, durum='beklemede')
+
+    if request.method == 'POST':
+        # Teklifi onayla
+        teklif.durum = 'onaylandi'
+        teklif.save()
+
+        # İlgili kitapları "takasta" durumuna geçir
+        teklif.istened_kitap.durum = 'takasta'
+        teklif.istened_kitap.save()
+        teklif.teklif_edilen_kitap.durum = 'takasta'
+        teklif.teklif_edilen_kitap.save()
+
+        # Aynı kitaplara gelen diğer bekleyen teklifleri reddet
+        TakasTeklifi.objects.filter(
+            durum='beklemede'
+        ).filter(
+            Q(istened_kitap=teklif.istened_kitap) |
+            Q(istened_kitap=teklif.teklif_edilen_kitap) |
+            Q(teklif_edilen_kitap=teklif.istened_kitap) |
+            Q(teklif_edilen_kitap=teklif.teklif_edilen_kitap)
+        ).exclude(pk=teklif.pk).update(durum='reddedildi')
+
+        messages.success(
+            request,
+            f'"{teklif.teklif_edilen_kitap.kitap_adi}" ↔ '
+            f'"{teklif.istened_kitap.kitap_adi}" takas teklifi onaylandı! '
+            f'{teklif.gonderen.get_full_name() or teklif.gonderen.username} '
+            f'ile iletişime geçebilirsiniz.'
+        )
+        return redirect('books:profil')
+
+    return redirect('books:profil')
+
+
+@login_required
+def teklif_reddet(request, pk):
+    """Gelen takas teklifini reddeder."""
+    teklif = get_object_or_404(TakasTeklifi, pk=pk, alici=request.user, durum='beklemede')
+
+    if request.method == 'POST':
+        teklif.durum = 'reddedildi'
+        teklif.save()
+        messages.info(request, 'Takas teklifi reddedildi.')
+        return redirect('books:profil')
+
+    return redirect('books:profil')
+
+
+@login_required
+def teklif_iptal(request, pk):
+    """Gönderilen takas teklifini iptal eder."""
+    teklif = get_object_or_404(TakasTeklifi, pk=pk, gonderen=request.user, durum='beklemede')
+
+    if request.method == 'POST':
+        teklif.durum = 'iptal'
+        teklif.save()
+        messages.info(request, 'Takas teklifiniz iptal edildi.')
+        return redirect('books:profil')
+
+    return redirect('books:profil')

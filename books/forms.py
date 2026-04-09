@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from .models import UyeProfil, Kitap, KitapDegerlendirme
+from .models import UyeProfil, Kitap, KitapDegerlendirme, KullaniciKitap
 
 
 class KayitFormu(forms.ModelForm):
@@ -172,3 +172,58 @@ class DegerlendirmeFormu(forms.ModelForm):
         if puan is None or not (1 <= int(puan) <= 5):
             raise forms.ValidationError('Puan 1 ile 5 arasinda olmalidir.')
         return puan
+
+
+# ──────────────────────────────────────────────
+# Takas Formları
+# ──────────────────────────────────────────────
+
+class KullaniciKitapFormu(forms.ModelForm):
+    """Kullanıcının takasa açmak istediği kitabı eklemek için form."""
+
+    class Meta:
+        model = KullaniciKitap
+        fields = ['kitap_adi', 'yazar_adi', 'aciklama']
+        labels = {
+            'kitap_adi': 'Kitap Adı',
+            'yazar_adi': 'Yazar Adı',
+            'aciklama': 'Açıklama / Durum Notu (Opsiyonel)',
+        }
+        widgets = {
+            'kitap_adi': forms.TextInput(attrs={
+                'placeholder': 'Kitabın tam adını girin...',
+            }),
+            'yazar_adi': forms.TextInput(attrs={
+                'placeholder': 'Yazarın adını girin...',
+            }),
+            'aciklama': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Kitabın durumu, baskı bilgisi vb. (opsiyonel)',
+            }),
+        }
+
+
+class TakasTeklifiFormu(forms.Form):
+    """Takas teklifi gönderme formu."""
+
+    teklif_edilen_kitap = forms.ModelChoiceField(
+        queryset=KullaniciKitap.objects.none(),
+        label='Teklif Ettiğiniz Kitap',
+        empty_label='— Bir kitap seçin —',
+        widget=forms.Select(),
+    )
+    mesaj = forms.CharField(
+        label='Mesajınız (Opsiyonel)',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Takas hakkında bir not ekleyebilirsiniz...',
+        }),
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields['teklif_edilen_kitap'].queryset = KullaniciKitap.objects.filter(
+                sahip=user, durum='musait'
+            )

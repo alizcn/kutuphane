@@ -163,3 +163,92 @@ class KitapDegerlendirme(models.Model):
 
     def __str__(self):
         return f"{self.kullanici.username} - {self.kitap.baslik} ({self.puan}/5)"
+
+
+# ──────────────────────────────────────────────
+# Takas Sistemi
+# ──────────────────────────────────────────────
+
+class KullaniciKitap(models.Model):
+    """Kullanıcının takasa açmak istediği kendi kitabı."""
+
+    DURUM_SECENEKLERI = [
+        ('musait', 'Müsait'),
+        ('takasta', 'Takasta'),
+        ('kaldirildi', 'Kaldırıldı'),
+    ]
+
+    sahip = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='kullanici_kitaplari'
+    )
+    kitap_adi = models.CharField(max_length=200, verbose_name='Kitap Adı')
+    yazar_adi = models.CharField(max_length=100, verbose_name='Yazar Adı')
+    aciklama = models.TextField(blank=True, verbose_name='Açıklama / Durum Notu')
+    durum = models.CharField(
+        max_length=20, choices=DURUM_SECENEKLERI, default='musait', verbose_name='Durum'
+    )
+    olusturma_tarihi = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Kullanıcı Kitabı'
+        verbose_name_plural = 'Kullanıcı Kitapları'
+        ordering = ['-olusturma_tarihi']
+
+    def __str__(self):
+        return f"{self.kitap_adi} ({self.sahip.username})"
+
+    @property
+    def bekleyen_teklif_sayisi(self):
+        """Bu kitaba gelen bekleyen teklif sayısı."""
+        return self.gelen_teklifler.filter(durum='beklemede').count()
+
+    @property
+    def musait_mi(self):
+        return self.durum == 'musait'
+
+
+class TakasTeklifi(models.Model):
+    """İki kullanıcı arasındaki takas teklifi."""
+
+    DURUM_SECENEKLERI = [
+        ('beklemede', 'Beklemede'),
+        ('onaylandi', 'Onaylandı'),
+        ('reddedildi', 'Reddedildi'),
+        ('iptal', 'İptal Edildi'),
+    ]
+
+    gonderen = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='gonderilen_teklifler'
+    )
+    alici = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='alinan_teklifler'
+    )
+    # Gönderenin teklif ettiği kendi kitabı
+    teklif_edilen_kitap = models.ForeignKey(
+        KullaniciKitap, on_delete=models.CASCADE, related_name='verilen_teklifler'
+    )
+    # Gönderenin almak istediği, alıcıya ait kitap
+    istenen_kitap = models.ForeignKey(
+        KullaniciKitap, on_delete=models.CASCADE, related_name='gelen_teklifler'
+    )
+    mesaj = models.TextField(blank=True, verbose_name='Mesaj')
+    durum = models.CharField(
+        max_length=20, choices=DURUM_SECENEKLERI, default='beklemede', verbose_name='Durum'
+    )
+    olusturma_tarihi = models.DateTimeField(auto_now_add=True)
+    guncelleme_tarihi = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Takas Teklifi'
+        verbose_name_plural = 'Takas Teklifleri'
+        ordering = ['-olusturma_tarihi']
+
+    def __str__(self):
+        return (
+            f"{self.gonderen.username} → {self.alici.username}: "
+            f"{self.teklif_edilen_kitap.kitap_adi} ↔ {self.istenen_kitap.kitap_adi}"
+        )
+
+    @property
+    def beklemede_mi(self):
+        return self.durum == 'beklemede'
