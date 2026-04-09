@@ -41,6 +41,8 @@ class Kitap(models.Model):
     aciklama = models.TextField(blank=True)
     stok = models.PositiveIntegerField(default=0)
     olusturma_tarihi = models.DateTimeField(auto_now_add=True)
+    # Takas icin yeni alan
+    takasa_acik = models.BooleanField(default=False, help_text='Bu kitap takasa acik midir?')
 
     class Meta:
         verbose_name = 'Kitap'
@@ -163,3 +165,67 @@ class KitapDegerlendirme(models.Model):
 
     def __str__(self):
         return f"{self.kullanici.username} - {self.kitap.baslik} ({self.puan}/5)"
+
+
+class KitapTakasi(models.Model):
+    """Kitap takas tekliflerini yoneten model."""
+    
+    DURUM_SECENEKLERI = [
+        ('beklemede', 'Beklemede'),
+        ('kabul_edildi', 'Kabul Edildi'),
+        ('reddedildi', 'Reddedildi'),
+        ('tamamlandi', 'Tamamlandı'),
+    ]
+    
+    # Teklifleri gondereni
+    gonderici = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='gonderilen_takas_teklifleri',
+        help_text='Takas teklifini gönderen kullanıcı'
+    )
+    # Teklifleri alani
+    alici = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='alinan_takas_teklifleri',
+        help_text='Takas teklifini alan kullanıcı'
+    )
+    
+    # Gonderici nin takas etmek istedigi kitap
+    gonderici_kitap = models.ForeignKey(
+        Kitap, on_delete=models.CASCADE, related_name='takas_teklifleri_gonderici',
+        help_text='Gönderici tarafından verilen kitap'
+    )
+    # Alici nin takas etmek istedigi kitap
+    alici_kitap = models.ForeignKey(
+        Kitap, on_delete=models.CASCADE, related_name='takas_teklifleri_alici',
+        help_text='Alıcı tarafından verilen kitap'
+    )
+    
+    durum = models.CharField(
+        max_length=20, choices=DURUM_SECENEKLERI, default='beklemede'
+    )
+    
+    aciklama = models.TextField(
+        blank=True, help_text='Takas teklifine ait açıklama veya not'
+    )
+    
+    olusturma_tarihi = models.DateTimeField(auto_now_add=True)
+    gunceleme_tarihi = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Kitap Takası'
+        verbose_name_plural = 'Kitap Takasları'
+        ordering = ['-olusturma_tarihi']
+    
+    def __str__(self):
+        return f"{self.gonderici.username} -> {self.alici.username} ({self.durum})"
+    
+    @property
+    def beklemede(self):
+        return self.durum == 'beklemede'
+    
+    @property
+    def kabul_edildi(self):
+        return self.durum == 'kabul_edildi'
+    
+    @property
+    def reddedildi(self):
+        return self.durum == 'reddedildi'

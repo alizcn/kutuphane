@@ -8,8 +8,8 @@ from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import Kitap, Yazar, Kategori, UyeProfil, OduncAlma, KitapDegerlendirme, ODUNC_SURESI_GUN
-from .forms import KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu, DegerlendirmeFormu
+from .models import Kitap, Yazar, Kategori, UyeProfil, OduncAlma, KitapDegerlendirme, ODUNC_SURESI_GUN, KitapTakasi
+from .forms import KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu, DegerlendirmeFormu, TakasTekkliEkleFormu
 
 
 # ──────────────────────────────────────────────
@@ -274,12 +274,30 @@ def profil_view(request):
     gecmis_oduncler = OduncAlma.objects.filter(
         uye=request.user, aktif=False
     ).select_related('kitap').order_by('-teslim_tarihi')[:10]
+    
+    # Takasa acik kitaplari
+    takasa_acik_kitaplar = Kitap.objects.filter(
+        takasa_acik=True
+    ).select_related('yazar', 'kategori')
+    
+    # Gelen takas teklifleri
+    gelen_teklifler = KitapTakasi.objects.filter(
+        alici=request.user
+    ).select_related('gonderici', 'gonderici_kitap', 'alici_kitap')
+    
+    # Giden takas teklifleri
+    giden_teklifler = KitapTakasi.objects.filter(
+        gonderici=request.user
+    ).select_related('alici', 'gonderici_kitap', 'alici_kitap')
 
     return render(request, 'books/profil.html', {
         'form': form,
         'profil': profil,
         'aktif_oduncler': aktif_oduncler,
         'gecmis_oduncler': gecmis_oduncler,
+        'takasa_acik_kitaplar': takasa_acik_kitaplar,
+        'gelen_teklifler': gelen_teklifler,
+        'giden_teklifler': giden_teklifler,
     })
 
 
@@ -315,7 +333,7 @@ def odunc_al(request, pk):
             kitap.save()
             messages.success(
                 request,
-                f'"{kitap.baslik}" basariyla odunc alindi. '
+                f'\"{kitap.baslik}\" basariyla odunc alindi. '
                 f'{ODUNC_SURESI_GUN} gun icinde iade etmeniz gerekmektedir.'
             )
             return redirect('books:profil')
@@ -344,7 +362,7 @@ def iade_et(request, pk):
 
         messages.success(
             request,
-            f'"{odunc.kitap.baslik}" basariyla iade edildi.'
+            f'\"{odunc.kitap.baslik}\" basariyla iade edildi.'
         )
         return redirect('books:profil')
 
@@ -376,7 +394,91 @@ def degerlendirme_ekle(request, pk):
         else:
             messages.error(
                 request,
-                'Degerlendirme kaydedilemedi. Lutfen 1-5 arasinda bir puan secin.'
+                'Degerlendirme kaydedilemedi. Lutfen 1-5 arasinda bir puan secin.'\
             )
 
     return redirect('books:kitap_detay', pk=kitap.pk)
+
+
+# ──────────────────────────────────────────────
+# Takas View'lari
+# ──────────────────────────────────────────────
+
+@login_required
+def takas_teklifi_gonder(request, pk):
+    """Bir kullanıcıya takas teklifi gönder."""
+    alici_id = pk
+    alici = get_object_or_404(User, pk=alici_id, is_staff=False)
+    
+    # Kendi kendine takas teklifi gönderemesin
+    if alici == request.user:
+        messages.error(request, 'Kendinize takas teklifi gönderemezsiniz!')
+        return redirect('books:kitap_listesi')
+    
+    # Kullanicinin sahip oldugu takasa acik kitaplari
+    kendi_kitaplari = Kitap.objects.filter(
+        takasa_acik=True
+    ).select_related('yazar', 'kategori')
+    
+    # Alicinin sahip oldugu takasa acik kitaplari
+    alici_kitaplari = Kitap.objects.filter(
+        takasa_acik=True
+    ).select_related('yazar', 'kategori')
+    
+    if request.method == 'POST':
+        form = TakasTekkliEkleFormu(request.POST)
+        if form.is_valid():
+            takas = form.save(commit=False)
+            takas.gonderici = request.user
+            takas.alici = alici
+            takas.save()
+            messages.success(
+                request,
+                f'{alici.get_full_name() or alici.username} adli kullaniciyan takas teklifi gonderildi!'
+            )
+            return redirect('books:profil')
+    else:
+        form = TakasTekkliEkleFormu()
+    
+    return render(request, 'books/takas_teklifi_gonder.html', {
+        'form': form,
+        'alici': alici,
+    })
+
+
+@login_required
+def takas_teklifi_onayla(request, pk):
+    """Gelen takas teklifini onayla."""
+    takas = get_object_or_404(
+        KitapTakasi, pk=pk, alici=request.user, durum='beklemede'
+    )
+    
+    if request.method == 'POST':
+        takas.durum = 'kabul_edildi'
+        takas.save()
+        messages.success(
+            request,
+            f'{takas.gonderici.get_full_name() or takas.gonderici.username} ile takas kabul edildi!'
+        )
+        return redirect('books:profil')
+    
+    return render(request, 'books/takas_onayla.html', {'takas': takas})
+
+
+@login_required
+def takas_teklifi_reddet(request, pk):
+    """Gelen takas teklifini reddet."""
+    takas = get_object_or_404(
+        KitapTakasi, pk=pk, alici=request.user, durum='beklemede'
+    )
+    
+    if request.method == 'POST':
+        takas.durum = 'reddedildi'
+        takas.save()
+        messages.info(
+            request,
+            f'{takas.gonderici.get_full_name() or takas.gonderici.username} kullanicisindan gelen takas teklifi reddedildi.'
+        )
+        return redirect('books:profil')
+    
+    return render(request, 'books/takas_reddet.html', {'takas': takas})

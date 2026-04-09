@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from .models import UyeProfil, Kitap, KitapDegerlendirme
+from .models import UyeProfil, Kitap, KitapDegerlendirme, KitapTakasi
 
 
 class KayitFormu(forms.ModelForm):
@@ -172,3 +172,33 @@ class DegerlendirmeFormu(forms.ModelForm):
         if puan is None or not (1 <= int(puan) <= 5):
             raise forms.ValidationError('Puan 1 ile 5 arasinda olmalidir.')
         return puan
+
+
+class TakasTekkliEkleFormu(forms.ModelForm):
+    """Kitap takas teklifi gonderme formu."""
+    
+    class Meta:
+        model = KitapTakasi
+        fields = ['gonderici_kitap', 'alici_kitap', 'aciklama']
+        labels = {
+            'gonderici_kitap': 'Vermek Istediginiz Kitap',
+            'alici_kitap': 'Almak Istediginiz Kitap',
+            'aciklama': 'Takas Hakkinda Aciklama (Opsiyonel)',
+        }
+        widgets = {
+            'aciklama': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Takas hakkinda bir aciklama yazabilirsiniz...',
+            }),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        gonderici_kitap = cleaned_data.get('gonderici_kitap')
+        alici_kitap = cleaned_data.get('alici_kitap')
+        
+        if gonderici_kitap and alici_kitap:
+            if gonderici_kitap == alici_kitap:
+                raise forms.ValidationError('Ayni kitabi gondereceginiz ve alamazsiniz!')
+        
+        return cleaned_data
