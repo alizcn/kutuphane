@@ -80,3 +80,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'books:giris'
 LOGIN_REDIRECT_URL = 'books:kitap_listesi'
 LOGOUT_REDIRECT_URL = 'books:kitap_listesi'
+
+# OpenAI Configuration
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')

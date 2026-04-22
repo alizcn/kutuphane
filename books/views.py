@@ -7,9 +7,19 @@ from django.db.models import Count, Q, Avg
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
+from django.http import JsonResponse
+import json
 
-from .models import Kitap, Yazar, Kategori, UyeProfil, OduncAlma, KitapDegerlendirme, ODUNC_SURESI_GUN, KitapTakasi
-from .forms import KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu, DegerlendirmeFormu, TakasTekkliEkleFormu
+from .models import (
+    Kitap, Yazar, Kategori, UyeProfil, OduncAlma, KitapDegerlendirme, 
+    ODUNC_SURESI_GUN, KitapTakasi, AIRecommendation
+)
+from .forms import (
+    KayitFormu, GirisFormu, ProfilFormu, OduncAlmaFormu, DegerlendirmeFormu, 
+    TakasTekkliEkleFormu, BookRecommendationFormu, BookSummaryFormu, 
+    ReviewAnalysisFormu
+)
+from .openai_service import get_openai_service
 
 
 # ──────────────────────────────────────────────
@@ -333,7 +343,7 @@ def odunc_al(request, pk):
             kitap.save()
             messages.success(
                 request,
-                f'\"{kitap.baslik}\" basariyla odunc alindi. '
+                f'"{kitap.baslik}" basariyla odunc alindi. '
                 f'{ODUNC_SURESI_GUN} gun icinde iade etmeniz gerekmektedir.'
             )
             return redirect('books:profil')
@@ -362,7 +372,7 @@ def iade_et(request, pk):
 
         messages.success(
             request,
-            f'\"{odunc.kitap.baslik}\" basariyla iade edildi.'
+            f'"{odunc.kitap.baslik}" basariyla iade edildi.'
         )
         return redirect('books:profil')
 
@@ -394,7 +404,7 @@ def degerlendirme_ekle(request, pk):
         else:
             messages.error(
                 request,
-                'Degerlendirme kaydedilemedi. Lutfen 1-5 arasinda bir puan secin.'\
+                'Degerlendirme kaydedilemedi. Lutfen 1-5 arasinda bir puan secin.'
             )
 
     return redirect('books:kitap_detay', pk=kitap.pk)
@@ -482,3 +492,204 @@ def takas_teklifi_reddet(request, pk):
         return redirect('books:profil')
     
     return render(request, 'books/takas_reddet.html', {'takas': takas})
+
+
+# ──────────────────────────────────────────────
+# OpenAI AI Features Views
+# ──────────────────────────────────────────────
+
+@login_required
+def ai_recommendations(request):
+    """Get AI-powered book recommendations based on user preferences."""
+    openai_service = get_openai_service()
+    
+    if not openai_service.is_configured():
+        messages.warning(request, 'OpenAI API yapilandirilmamis. Lutfen yöneticiye basvurun.')
+        return redirect('books:kitap_listesi')
+    
+    recommendation = None
+    form = BookRecommendationFormu()
+    
+    if request.method == 'POST':
+        form = BookRecommendationFormu(request.POST)
+        if form.is_valid():
+            preferences = form.cleaned_data['preferences']
+            
+            # Call OpenAI API
+            result = openai_service.generate_book_recommendation(preferences)
+            
+            if result:
+                # Save to database
+                AIRecommendation.objects.create(
+                    kullanici=request.user,
+                    recommendation_type='book',
+                    prompt=preferences,
+                    response=result,
+                )
+                recommendation = result
+                messages.success(request, 'Oneriler basariyla olusturuldu!')
+            else:
+                messages.error(request, 'AI onerisi olusturulurken hata olustu. Lutfen daha sonra deneyiniz.')
+    
+    # Get user's previous recommendations
+    previous_recommendations = AIRecommendation.objects.filter(
+        kullanici=request.user,
+        recommendation_type='book'
+    ).order_by('-olusturma_tarihi')[:5]
+    
+    return render(request, 'books/ai_recommendations.html', {
+        'form': form,
+        'recommendation': recommendation,
+        'previous_recommendations': previous_recommendations,
+    })
+
+
+@login_required
+def ai_book_summary(request):
+    """Get AI-generated summary for a specific book."""
+    openai_service = get_openai_service()
+    
+    if not openai_service.is_configured():
+        messages.warning(request, 'OpenAI API yapilandirilmamis. Lutfen yöneticiye basvurun.')
+        return redirect('books:kitap_listesi')
+    
+    summary = None
+    form = BookSummaryFormu()
+    
+    if request.method == 'POST':
+        form = BookSummaryFormu(request.POST)
+        if form.is_valid():
+            book_title = form.cleaned_data['book_title']
+            book_author = form.cleaned_data['book_author']
+            
+            # Call OpenAI API
+            result = openai_service.generate_book_summary(book_title, book_author)
+            
+            if result:
+                # Save to database
+                AIRecommendation.objects.create(
+                    kullanici=request.user,
+                    recommendation_type='summary',
+                    prompt=f'{book_title} - {book_author}',
+                    response=result,
+                )
+                summary = result
+                messages.success(request, 'Ozet basariyla olusturuldu!')
+            else:
+                messages.error(request, 'AI ozeti olusturulurken hata olustu. Lutfen daha sonra deneyiniz.')
+    
+    # Get user's previous summaries
+    previous_summaries = AIRecommendation.objects.filter(
+        kullanici=request.user,
+        recommendation_type='summary'
+    ).order_by('-olusturma_tarihi')[:5]
+    
+    return render(request, 'books/ai_book_summary.html', {
+        'form': form,
+        'summary': summary,
+        'previous_summaries': previous_summaries,
+    })
+
+
+@login_required
+def ai_review_analysis(request):
+    """Analyze book reviews using AI."""
+    openai_service = get_openai_service()
+    
+    if not openai_service.is_configured():
+        messages.warning(request, 'OpenAI API yapilandirilmamis. Lutfen yöneticiye basvurun.')
+        return redirect('books:kitap_listesi')
+    
+    analysis = None
+    form = ReviewAnalysisFormu()
+    
+    if request.method == 'POST':
+        form = ReviewAnalysisFormu(request.POST)
+        if form.is_valid():
+            review_text = form.cleaned_data['review_text']
+            
+            # Call OpenAI API
+            result = openai_service.analyze_book_review(review_text)
+            
+            if result:
+                # Save to database
+                AIRecommendation.objects.create(
+                    kullanici=request.user,
+                    recommendation_type='review_analysis',
+                    prompt=review_text,
+                    response=json.dumps(result) if isinstance(result, dict) else result,
+                )
+                analysis = result
+                messages.success(request, 'Yorum analizi basariyla tamamlandi!')
+            else:
+                messages.error(request, 'Yorum analizi sirasinda hata olustu. Lutfen daha sonra deneyiniz.')
+    
+    # Get user's previous analyses
+    previous_analyses = AIRecommendation.objects.filter(
+        kullanici=request.user,
+        recommendation_type='review_analysis'
+    ).order_by('-olusturma_tarihi')[:5]
+    
+    return render(request, 'books/ai_review_analysis.html', {
+        'form': form,
+        'analysis': analysis,
+        'previous_analyses': previous_analyses,
+    })
+
+
+@login_required
+def ai_author_bio(request, author_id=None):
+    """Get AI-generated author biography."""
+    openai_service = get_openai_service()
+    
+    if not openai_service.is_configured():
+        messages.warning(request, 'OpenAI API yapilandirilmamis. Lutfen yöneticiye basvurun.')
+        return redirect('books:kitap_listesi')
+    
+    bio = None
+    author = None
+    
+    if author_id:
+        author = get_object_or_404(Yazar, pk=author_id)
+        # Call OpenAI API
+        result = openai_service.generate_author_biography(author.ad)
+        
+        if result:
+            # Save to database
+            AIRecommendation.objects.create(
+                kullanici=request.user,
+                recommendation_type='author_bio',
+                prompt=author.ad,
+                response=result,
+            )
+            bio = result
+            messages.success(request, 'Yazar biyografisi basariyla olusturuldu!')
+        else:
+            messages.error(request, 'Yazar biyografisi olusturulurken hata olustu. Lutfen daha sonra deneyiniz.')
+        
+        return render(request, 'books/ai_author_bio.html', {
+            'author': author,
+            'bio': bio,
+        })
+    
+    # Get user's previous biographies
+    previous_bios = AIRecommendation.objects.filter(
+        kullanici=request.user,
+        recommendation_type='author_bio'
+    ).order_by('-olusturma_tarihi')[:5]
+    
+    return render(request, 'books/ai_author_bio_list.html', {
+        'previous_bios': previous_bios,
+    })
+
+
+@login_required
+def ai_recommendation_history(request):
+    """View user's AI recommendation history."""
+    recommendations = AIRecommendation.objects.filter(
+        kullanici=request.user
+    ).order_by('-olusturma_tarihi')
+    
+    return render(request, 'books/ai_recommendation_history.html', {
+        'recommendations': recommendations,
+    })
