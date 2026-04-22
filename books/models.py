@@ -229,3 +229,36 @@ class KitapTakasi(models.Model):
     @property
     def reddedildi(self):
         return self.durum == 'reddedildi'
+
+
+class AIRecommendation(models.Model):
+    """Model for storing AI-generated recommendations."""
+    
+    RECOMMENDATION_TYPE_CHOICES = [
+        ('book', 'Kitap Önerisi'),
+        ('summary', 'Kitap Özeti'),
+        ('review_analysis', 'Yorum Analizi'),
+        ('author_bio', 'Yazar Biyografisi'),
+    ]
+    
+    kullanici = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='ai_recommendations'
+    )
+    recommendation_type = models.CharField(
+        max_length=20, choices=RECOMMENDATION_TYPE_CHOICES
+    )
+    prompt = models.TextField(help_text='AI\'ye gönderilen soru')
+    response = models.TextField(help_text='AI\'nin cevabı')
+    kitap = models.ForeignKey(
+        Kitap, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ai_recommendations'
+    )
+    olusturma_tarihi = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'AI Önerisi'
+        verbose_name_plural = 'AI Önerileri'
+        ordering = ['-olusturma_tarihi']
+    
+    def __str__(self):
+        return f"{self.get_recommendation_type_display()} - {self.kullanici.username}"

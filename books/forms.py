@@ -202,3 +202,46 @@ class TakasTekkliEkleFormu(forms.ModelForm):
                 raise forms.ValidationError('Ayni kitabi gondereceginiz ve alamazsiniz!')
         
         return cleaned_data
+
+
+class BookRecommendationFormu(forms.Form):
+    """Form for getting AI book recommendations."""
+    preferences = forms.CharField(
+        label='Okuma Tercihleri',
+        widget=forms.Textarea(attrs={
+            'rows': 4,
+            'placeholder': 'Sevdiginiz kitap turleri, yazarlar, temalar hakkinda bilgi verin...',
+        }),
+        help_text='Okuma tercihlerinizi anlatmaniz AI\'nin daha iyi oneriler vermesine yardim eder.'
+    )
+
+
+class BookSummaryFormu(forms.Form):
+    """Form for getting AI book summary."""
+    book_title = forms.CharField(
+        label='Kitap Baslighi',
+        max_length=200,
+        widget=forms.TextInput(attrs={'placeholder': 'Kitap basligi'}),
+    )
+    book_author = forms.CharField(
+        label='Yazar',
+        max_length=200,
+        widget=forms.TextInput(attrs={'placeholder': 'Yazar adi'}),
+    )
+
+
+class ReviewAnalysisFormu(forms.Form):
+    """Form for analyzing book reviews using AI."""
+    review_text = forms.CharField(
+        label='Yorum Metni',
+        widget=forms.Textarea(attrs={
+            'rows': 4,
+            'placeholder': 'Analiz etmek istediginiz kitap yorumunu girin...',
+        }),
+    )
+    
+    def clean_review_text(self):
+        review_text = self.cleaned_data.get('review_text')
+        if len(review_text) < 10:
+            raise forms.ValidationError('Yorum en az 10 karakter olmalidir.')
+        return review_text
