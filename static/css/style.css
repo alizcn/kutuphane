@@ -5,11 +5,11 @@
 
 /* --- CSS Variables & Theme --- */
 :root {
-    --primary: #1e3a5f;
-    --primary-light: #2a5298;
-    --primary-dark: #0f1f38;
-    --primary-50: #eff6ff;
-    --primary-100: #dbeafe;
+    --primary: #10b981;
+    --primary-light: #34d399;
+    --primary-dark: #059669;
+    --primary-50: #f0fdf4;
+    --primary-100: #dcfce7;
 
     --accent: #e8443a;
     --accent-hover: #c9362e;
@@ -104,7 +104,7 @@ nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 4px 20px rgba(15, 31, 56, 0.25);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -317,13 +317,13 @@ nav .user-avatar {
 .btn-primary {
     background: linear-gradient(135deg, var(--primary-light), var(--primary));
     color: #fff;
-    box-shadow: 0 2px 8px rgba(30, 58, 95, 0.25);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
 }
 
 .btn-primary:hover {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: #fff;
-    box-shadow: 0 4px 16px rgba(30, 58, 95, 0.35);
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
     transform: translateY(-1px);
 }
 
@@ -470,7 +470,7 @@ nav .user-avatar {
 
 .search-input:focus {
     border-color: var(--primary-light);
-    box-shadow: 0 0 0 4px rgba(42, 82, 152, 0.1);
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.1);
     background: var(--card-bg);
 }
 
@@ -508,7 +508,7 @@ nav .user-avatar {
     background: var(--primary);
     color: #fff;
     border-color: var(--primary);
-    box-shadow: 0 2px 8px rgba(30, 58, 95, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 /* --- Book Grid --- */
@@ -871,7 +871,7 @@ nav .user-avatar {
     align-items: center;
     justify-content: center;
     font-size: 1.6rem;
-    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.25);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 .auth-card h1 {
@@ -944,7 +944,7 @@ nav .user-avatar {
 .form-group textarea:focus,
 .form-group select:focus {
     border-color: var(--primary-light);
-    box-shadow: 0 0 0 4px rgba(42, 82, 152, 0.1);
+    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.1);
     background: var(--card-bg);
 }
 
