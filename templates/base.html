@@ -19,6 +19,7 @@
             </a>
             <a href="{% url 'books:kitap_listesi' %}">&#128214; Kitaplar</a>
             <a href="{% url 'books:dashboard' %}">&#128202; Dashboard</a>
+            <a href="{% url 'books:profil' %}">&#128177; Kitap Takasi</a>
             {% if user.is_staff %}
             <a href="/admin/">&#9881; Yonetim</a>
             {% endif %}
