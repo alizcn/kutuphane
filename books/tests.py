@@ -803,3 +803,60 @@ class ChatWidgetDesignTest(TestCase):
         """Chat butonunda bildirim badge'i olmali."""
         response = self.client.get(reverse('books:kitap_listesi'))
         self.assertContains(response, 'chat-badge')
+
+
+# ──────────────────────────────────────────────
+# Banner Testleri
+# ──────────────────────────────────────────────
+
+class HeroBannerTest(TestCase):
+    """ALI OZCAN banner'inin tum sayfalarda gorundugundan emin olan testler."""
+
+    def setUp(self):
+        self.client = Client()
+        self.yazar = Yazar.objects.create(ad='Test Yazar')
+        self.kitap = Kitap.objects.create(
+            baslik='Test Kitap', yazar=self.yazar,
+            yayin_yili=2020, sayfa_sayisi=200, stok=5,
+        )
+
+    def test_banner_on_kitap_listesi(self):
+        """Kitap listesi sayfasinda banner olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'hero-banner')
+        self.assertContains(response, 'ALI OZCAN')
+
+    def test_banner_on_dashboard(self):
+        """Dashboard sayfasinda banner olmali."""
+        response = self.client.get(reverse('books:dashboard'))
+        self.assertContains(response, 'hero-banner')
+        self.assertContains(response, 'ALI OZCAN')
+
+    def test_banner_on_kitap_detay(self):
+        """Kitap detay sayfasinda banner olmali."""
+        response = self.client.get(
+            reverse('books:kitap_detay', args=[self.kitap.pk])
+        )
+        self.assertContains(response, 'hero-banner')
+        self.assertContains(response, 'ALI OZCAN')
+
+    def test_banner_on_giris(self):
+        """Giris sayfasinda banner olmali."""
+        response = self.client.get(reverse('books:giris'))
+        self.assertContains(response, 'hero-banner')
+        self.assertContains(response, 'ALI OZCAN')
+
+    def test_banner_title_centered(self):
+        """Banner h1 etiketi ile hero-banner-title class'i olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'hero-banner-title')
+
+    def test_banner_between_nav_and_container(self):
+        """Banner, nav ile container arasinda olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        content = response.content.decode()
+        nav_end = content.index('</nav>')
+        banner_pos = content.index('hero-banner')
+        container_pos = content.index('class="container"')
+        self.assertLess(nav_end, banner_pos)
+        self.assertLess(banner_pos, container_pos)
