@@ -19,6 +19,7 @@
             </a>
             <a href="{% url 'books:kitap_listesi' %}">&#128214; Kitaplar</a>
             <a href="{% url 'books:dashboard' %}">&#128202; Dashboard</a>
+            <a href="{% url 'books:profil' %}">&#128177; Kitap Takasi</a>
             {% if user.is_staff %}
             <a href="/admin/">&#9881; Yonetim</a>
             {% endif %}
@@ -54,5 +55,235 @@
     <footer class="site-footer">
         &#128218; Kutuphane Yonetim Sistemi &copy; 2026 &mdash; Django ile gelistirilmistir.
     </footer>
+
+    <!-- Chat Widget -->
+    <button class="chat-toggle-btn" id="chatToggleBtn" title="Canli Destek">
+        <span class="chat-icon-open">&#128172;</span>
+        <span class="chat-icon-close">&#10005;</span>
+        <span class="chat-badge">3</span>
+    </button>
+
+    <div class="chat-window" id="chatWindow">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="chat-header-avatar">&#128218;</div>
+            <div class="chat-header-info">
+                <div class="chat-header-title">Kutuphane Destek</div>
+                <div class="chat-header-status">
+                    <span class="status-dot"></span>
+                    Cevrimici - Hemen cevap veriyor
+                </div>
+            </div>
+            <div class="chat-header-actions">
+                <button title="Sesi Kapat" id="chatMuteBtn">&#128264;</button>
+                <button title="Kucult" id="chatMinimizeBtn">&#9866;</button>
+            </div>
+        </div>
+
+        <!-- Chat Body -->
+        <div class="chat-body" id="chatBody">
+            <!-- Date Separator -->
+            <div class="chat-date-separator">
+                <span>Bugun</span>
+            </div>
+
+            <!-- Incoming Message 1 -->
+            <div class="chat-message chat-message-incoming">
+                <div class="chat-msg-avatar">KD</div>
+                <div class="chat-msg-content">
+                    <div class="chat-msg-bubble">
+                        Merhaba! Kutuphane Destek'e hosgeldiniz. Size nasil yardimci olabilirim? &#128578;
+                    </div>
+                    <span class="chat-msg-time">14:30</span>
+                </div>
+            </div>
+
+            <!-- Outgoing Message 1 -->
+            <div class="chat-message chat-message-outgoing">
+                <div class="chat-msg-avatar">B</div>
+                <div class="chat-msg-content">
+                    <div class="chat-msg-bubble">
+                        Merhaba, odunc aldigim kitabin iadesini uzatmak istiyorum. Mumkun mu?
+                    </div>
+                    <span class="chat-msg-time">14:32 &#10003;&#10003;</span>
+                </div>
+            </div>
+
+            <!-- Incoming Message 2 -->
+            <div class="chat-message chat-message-incoming">
+                <div class="chat-msg-avatar">KD</div>
+                <div class="chat-msg-content">
+                    <div class="chat-msg-bubble">
+                        Tabii ki! Hangi kitabi uzatmak istediginizi belirtir misiniz? Profil sayfanizdan da iade tarihini gorebilirsiniz.
+                    </div>
+                    <span class="chat-msg-time">14:33</span>
+                </div>
+            </div>
+
+            <!-- Outgoing Message 2 -->
+            <div class="chat-message chat-message-outgoing">
+                <div class="chat-msg-avatar">B</div>
+                <div class="chat-msg-content">
+                    <div class="chat-msg-bubble">
+                        "Suc ve Ceza" kitabi icin uzatma istiyorum. 2 hafta daha mumkun olur mu?
+                    </div>
+                    <span class="chat-msg-time">14:35 &#10003;&#10003;</span>
+                </div>
+            </div>
+
+            <!-- Incoming Message 3 -->
+            <div class="chat-message chat-message-incoming">
+                <div class="chat-msg-avatar">KD</div>
+                <div class="chat-msg-content">
+                    <div class="chat-msg-bubble">
+                        Kontrol ediyorum... Evet, "Suc ve Ceza" icin 2 haftalik uzatma yapildi! Yeni iade tarihiniz: <strong>8 Mayis 2026</strong>. Baska bir konuda yardimci olabilir miyim? &#128214;
+                    </div>
+                    <span class="chat-msg-time">14:36</span>
+                </div>
+            </div>
+
+            <!-- Quick Replies -->
+            <div class="chat-quick-replies">
+                <button class="chat-quick-reply">&#128214; Kitap Ara</button>
+                <button class="chat-quick-reply">&#128197; Iade Tarihleri</button>
+                <button class="chat-quick-reply">&#128177; Takas Bilgisi</button>
+                <button class="chat-quick-reply">&#128100; Uyelik</button>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="chat-typing" id="chatTyping" style="display: none;">
+                <div class="chat-typing-avatar">KD</div>
+                <div class="chat-typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Footer -->
+        <div class="chat-footer">
+            <div class="chat-input-actions">
+                <button title="Dosya Ekle">&#128206;</button>
+            </div>
+            <div class="chat-input-wrapper">
+                <textarea class="chat-input" id="chatInput" placeholder="Mesajinizi yazin..." rows="1"></textarea>
+            </div>
+            <div class="chat-input-actions">
+                <button title="Emoji">&#128522;</button>
+                <button class="chat-send-btn" title="Gonder" id="chatSendBtn">&#10148;</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const toggleBtn = document.getElementById('chatToggleBtn');
+        const chatWindow = document.getElementById('chatWindow');
+        const minimizeBtn = document.getElementById('chatMinimizeBtn');
+        const chatInput = document.getElementById('chatInput');
+        const chatBody = document.getElementById('chatBody');
+        const sendBtn = document.getElementById('chatSendBtn');
+        const chatBadge = toggleBtn.querySelector('.chat-badge');
+        const chatTyping = document.getElementById('chatTyping');
+        const quickReplies = document.querySelectorAll('.chat-quick-reply');
+
+        // Toggle chat window
+        toggleBtn.addEventListener('click', function() {
+            const isOpen = chatWindow.classList.toggle('open');
+            toggleBtn.classList.toggle('active', isOpen);
+            if (isOpen) {
+                chatBadge.style.display = 'none';
+                chatBody.scrollTop = chatBody.scrollHeight;
+                chatInput.focus();
+            }
+        });
+
+        // Minimize
+        minimizeBtn.addEventListener('click', function() {
+            chatWindow.classList.remove('open');
+            toggleBtn.classList.remove('active');
+        });
+
+        // Auto resize textarea
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // Send message (demo)
+        function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // Create outgoing message
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message chat-message-outgoing';
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+            msgDiv.innerHTML = `
+                <div class="chat-msg-avatar">B</div>
+                <div class="chat-msg-content">
+                    <div class="chat-msg-bubble">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                    <span class="chat-msg-time">${timeStr} &#10003;</span>
+                </div>
+            `;
+
+            // Insert before typing indicator
+            chatBody.insertBefore(msgDiv, chatTyping);
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Show typing indicator
+            chatTyping.style.display = 'flex';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Simulate reply
+            setTimeout(function() {
+                chatTyping.style.display = 'none';
+                const replyDiv = document.createElement('div');
+                replyDiv.className = 'chat-message chat-message-incoming';
+                const replyTime = new Date();
+                const replyTimeStr = replyTime.getHours().toString().padStart(2,'0') + ':' + replyTime.getMinutes().toString().padStart(2,'0');
+                const replies = [
+                    'Anliyorum, bu konuda size yardimci olabilirim! Biraz detay verir misiniz?',
+                    'Tabii, hemen kontrol ediyorum. Bir dakika lutfen...',
+                    'Bu soruyu sik aliyoruz! Profil sayfanizdan ilgili islemi gerceklestirebilirsiniz.',
+                    'Harika bir soru! Size en kisa surede detayli bilgi verecegim.',
+                    'Tesekkurler! Baska bir konuda yardimci olabilir miyim?'
+                ];
+                const randomReply = replies[Math.floor(Math.random() * replies.length)];
+                replyDiv.innerHTML = `
+                    <div class="chat-msg-avatar">KD</div>
+                    <div class="chat-msg-content">
+                        <div class="chat-msg-bubble">${randomReply}</div>
+                        <span class="chat-msg-time">${replyTimeStr}</span>
+                    </div>
+                `;
+                chatBody.insertBefore(replyDiv, chatTyping);
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }, 1500 + Math.random() * 1000);
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Quick reply buttons
+        quickReplies.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                chatInput.value = this.textContent.trim();
+                chatInput.focus();
+                chatInput.dispatchEvent(new Event('input'));
+            });
+        });
+    })();
+    </script>
 </body>
 </html>

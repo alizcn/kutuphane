@@ -703,3 +703,103 @@ class TemplateContentTest(TestCase):
         odunc = OduncAlma.objects.create(uye=self.user, kitap=self.kitap)
         response = self.client.get(reverse('books:iade_et', args=[odunc.pk]))
         self.assertContains(response, 'confirm-wrapper')
+
+
+# ──────────────────────────────────────────────
+# Chat Widget Tasarim Testleri
+# ──────────────────────────────────────────────
+
+class ChatWidgetDesignTest(TestCase):
+    """Chat widget'inin tum sayfalarda gorundugundan emin olan testler."""
+
+    def setUp(self):
+        self.client = Client()
+        self.yazar = Yazar.objects.create(ad='Test Yazar')
+        self.kitap = Kitap.objects.create(
+            baslik='Test Kitap', yazar=self.yazar,
+            yayin_yili=2020, sayfa_sayisi=200, stok=5,
+        )
+
+    def test_chat_toggle_button_on_kitap_listesi(self):
+        """Kitap listesi sayfasinda chat toggle butonu olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'id="chatToggleBtn"')
+        self.assertContains(response, 'chat-toggle-btn')
+
+    def test_chat_window_on_kitap_listesi(self):
+        """Kitap listesi sayfasinda chat penceresi HTML'i olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'id="chatWindow"')
+        self.assertContains(response, 'chat-window')
+
+    def test_chat_header_elements(self):
+        """Chat header'inda baslik ve durum bilgisi olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'Kutuphane Destek')
+        self.assertContains(response, 'chat-header')
+        self.assertContains(response, 'status-dot')
+
+    def test_chat_messages_area(self):
+        """Chat mesaj alani ve ornek mesajlar olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'chat-body')
+        self.assertContains(response, 'chat-message-incoming')
+        self.assertContains(response, 'chat-message-outgoing')
+
+    def test_chat_input_area(self):
+        """Chat mesaj girdi alani ve gonder butonu olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'id="chatInput"')
+        self.assertContains(response, 'id="chatSendBtn"')
+        self.assertContains(response, 'chat-footer')
+
+    def test_chat_quick_replies(self):
+        """Hizli yanit butonlari olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'chat-quick-reply')
+        self.assertContains(response, 'Kitap Ara')
+        self.assertContains(response, 'Iade Tarihleri')
+        self.assertContains(response, 'Takas Bilgisi')
+
+    def test_chat_widget_on_dashboard(self):
+        """Dashboard sayfasinda da chat widget gozukmeli."""
+        response = self.client.get(reverse('books:dashboard'))
+        self.assertContains(response, 'id="chatToggleBtn"')
+        self.assertContains(response, 'id="chatWindow"')
+
+    def test_chat_widget_on_kitap_detay(self):
+        """Kitap detay sayfasinda da chat widget gozukmeli."""
+        response = self.client.get(
+            reverse('books:kitap_detay', args=[self.kitap.pk])
+        )
+        self.assertContains(response, 'id="chatToggleBtn"')
+        self.assertContains(response, 'id="chatWindow"')
+
+    def test_chat_widget_on_giris(self):
+        """Giris sayfasinda da chat widget gozukmeli."""
+        response = self.client.get(reverse('books:giris'))
+        self.assertContains(response, 'id="chatToggleBtn"')
+        self.assertContains(response, 'id="chatWindow"')
+
+    def test_chat_css_loaded(self):
+        """CSS dosyasi yuklenmeli (style.css icinde chat stilleri var)."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'css/style.css')
+
+    def test_chat_javascript_inline(self):
+        """Chat icin JavaScript kodu sayfada olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'chatToggleBtn')
+        self.assertContains(response, 'chatWindow')
+        self.assertContains(response, 'addEventListener')
+
+    def test_chat_typing_indicator(self):
+        """Yazma gostergesi (typing indicator) olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'id="chatTyping"')
+        self.assertContains(response, 'chat-typing-dots')
+
+    def test_chat_badge_notification(self):
+        """Chat butonunda bildirim badge'i olmali."""
+        response = self.client.get(reverse('books:kitap_listesi'))
+        self.assertContains(response, 'chat-badge')
